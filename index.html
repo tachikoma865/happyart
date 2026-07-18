@@ -4,94 +4,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LUMINA ART | 願いを叶えるパワーアート</title>
-    <meta name="description" content="毎月25日、限定3個。あなたの人生に光を灯す、願いを叶えるパワーアート。">
+    <title>GLINTRIA（グリントリア） | 空間をパワースポットに変える、運命の光。</title>
+    <meta name="description" content="光導師 HIKARI が放つ一点物のアート。Glint（輝き）＋ -ria（場所）。飾ったその場所が、あなたの人生を動かすパワースポットに変わる。">
 
-    <!-- Google Fonts: 高級感のあるフォントを読み込み -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Noto+Sans+JP:wght@300;400;700&display=swap"
         rel="stylesheet">
 
-    <!-- スタイルシートのリンク（後ほど作成します） -->
+    <!-- スタイルシート -->
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <!-- ヘッダー：ブランドロゴのみのシンプル構成 -->
     <header>
-        <div class="logo">LUMINA ART</div>
+        <div class="logo-container">
+            <img src="glintria_logo.png" alt="GLINTRIA Logo" class="main-logo">
+        </div>
+        <div class="brand-name">GLINTRIA</div>
+        <div class="header-tag">空間を、あなたの運命を動かすパワースポットへ。</div>
     </header>
 
     <main>
-        <!-- セクション1：ヒーロー（コンセプト） -->
-        <section id="hero">
+        <!-- セクション1：ヒーロー -->
+        <section id="hero" class="dark-gold-theme">
+            <div class="hero-overlay"></div>
             <div class="hero-content">
-                <h1>光を、纏う。</h1>
-                <p class="subtitle">1分間の瞑想が、あなたの1日を輝かせる</p>
+                <span class="entrance-fade">Transforming Space & Destiny</span>
+                <h1 class="entrance-fade">飾った瞬間、そこは運命が動き出す。</h1>
+                <p class="subtitle entrance-fade">光導師 HIKARI による「光」と「行動」の伴走アート</p>
+                
+                <div class="schedule-box entrance-fade">
+                    <p class="date-highlight">【4月15日 21:00】 作品公開・予約開始</p>
+                    <p class="date-highlight">【4月29日 21:00】 販売（決済）開始</p>
+                </div>
             </div>
         </section>
 
-        <!-- セクション2：今月の作品（3個限定） -->
+        <!-- セクション2：光導師 HIKARI について -->
+        <section id="koudoushi">
+            <div class="container">
+                <div class="profile-layout">
+                    <div class="profile-text">
+                        <h2 class="section-title">光導師（こうどうし）、HIKARI。</h2>
+                        <p class="emphasis">光で運命を導き（光導）、現実の人生を自らの足で動かしていく（行動）。</p>
+                        <p>「たまたまこの絵に出会った」のではありません。あなたが今、この光に辿り着いたのは、あなたの人生が新しいステージへと進むための必然のサインです。</p>
+                        <p>私は、単なるアートを作り手ではありません。あなたの住まいをパワースポットに変え、理想の未来へと加速させる「運命のスイッチ」を届ける役割を担っています。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- セクション3：GLINTRIA のコンセプト -->
+        <section id="concept" class="bg-texture">
+            <div class="concept-container">
+                <h2 class="section-title">再現確率 0.00001% ―― 瞬間の奇跡。</h2>
+                <p>GLINTRIA（グリントリア）とは、Glint（輝き）＋-ria（場所）。<br>
+                色の重なりと重力によって生まれる「フルイドアート」の特性上、二度と同じ模様を作ることは不可能です。</p>
+                <p>宇宙の瞬きを一瞬だけ閉じ込めたような、世界に一つだけのアート。<br>
+                その圧倒的なエネルギーが、あなたの空間の波動を整え、現実を変容させていきます。</p>
+            </div>
+        </section>
+
+        <!-- セクション4：作品ギャラリー（4/15公開） -->
         <section id="gallery">
-            <h2 class="section-title">今月の結び</h2>
+            <h2 class="section-title">魂と共鳴する、三つの光。</h2>
             <div class="art-grid">
-                <!-- 作品1 -->
-                <article class="art-card">
-                    <div class="art-image-container">
-                        <img src="power_art_dawn.png" alt="希望の夜明け" class="art-image">
+                <!-- 金色系 -->
+                <article class="art-card is-teaser">
+                    <div class="art-badge">Gold</div>
+                    <div class="art-image-container teaser-blur">
+                        <img src="product_images/gold_front.png" alt="豊穣の光" class="art-image">
+                        <div class="teaser-lock">Coming on April 15</div>
                     </div>
                     <div class="art-info">
-                        <h3>希望の夜明け</h3>
-                        <p class="price">¥148,000 (税込)</p>
-                        <p class="description">ゴールドとブルーが織りなす、新しい始まりのエネルギー。</p>
-                        <a href="#" class="buy-button">この作品と対話する</a>
+                        <h3>豊穣の光（Gold）</h3>
+                        <p class="meaning">【繁栄・自信】空間を黄金の磁場へと変える、太陽のエネルギー。</p>
                     </div>
                 </article>
 
-                <!-- 作品2 -->
-                <article class="art-card">
-                    <div class="art-image-container">
-                        <img src="power_art_silence.png" alt="静寂の守護" class="art-image">
+                <!-- 水色系 -->
+                <article class="art-card is-teaser">
+                    <div class="art-badge">Blue</div>
+                    <div class="art-image-container teaser-blur">
+                        <img src="product_images/blue_front.png" alt="清流の守護" class="art-image">
+                        <div class="teaser-lock">Coming on April 15</div>
                     </div>
                     <div class="art-info">
-                        <h3>静寂の守護</h3>
-                        <p class="price">¥148,000 (税込)</p>
-                        <p class="description">神秘的なシルバーが心に平穏をもたらします。</p>
-                        <a href="#" class="buy-button">この作品と対話する</a>
+                        <h3>清流の守護（Blue）</h3>
+                        <p class="meaning">【浄化・安寧】淀みを消し去り、純粋な自分へと還れる聖域。</p>
                     </div>
                 </article>
 
-                <!-- 作品3 -->
-                <article class="art-card">
-                    <div class="art-image-container">
-                        <img src="power_art_moonlight.png" alt="豊穣の月光" class="art-image">
+                <!-- ピンク系 -->
+                <article class="art-card is-teaser">
+                    <div class="art-badge">Pink</div>
+                    <div class="art-image-container teaser-blur">
+                        <img src="product_images/pink_front.png" alt="桃花の縁" class="art-image">
+                        <div class="teaser-lock">Coming on April 15</div>
                     </div>
                     <div class="art-info">
-                        <h3>豊穣の月光</h3>
-                        <p class="price">¥148,000 (税込)</p>
-                        <p class="description">満月のエネルギーが、あなたの豊かさを引き出します。</p>
-                        <a href="#" class="buy-button">この作品と対話する</a>
+                        <h3>桃花の縁（Pink）</h3>
+                        <p class="meaning">【良縁・愛】自分を愛し、理想の縁を引き寄せる温かな磁場。</p>
                     </div>
                 </article>
             </div>
         </section>
 
-        <!-- セクション3：瞑想ガイド -->
-        <section id="meditation">
-            <h2>心を整える</h2>
-            <p>作品を1分間眺め、深く呼吸してください...</p>
+        <!-- セクション5：LINE無料鑑定への誘導 -->
+        <section id="line-optin" class="bg-gold-gradient">
+            <div class="line-container">
+                <span class="badge">FREE CLINIC</span>
+                <h2>どの「光」が、あなたを呼んでいますか？</h2>
+                <p>光導師 HIKARI による期間限定の無料波動判定を公式LINEで実施中です。<br>
+                あなたの空間を整え、運命を好転させるための「第一歩」を踏み出してみませんか？</p>
+                <div class="cta-box">
+                    <a href="#" class="line-button">光導師 HIKARI に相談する（LINE登録）</a>
+                    <p class="hint">※4月15日の作品詳細・優先予約もこちらからご案内します。</p>
+                </div>
+            </div>
         </section>
+
+        <!-- セクション6：品質保証 -->
+        <section id="authenticity">
+            <div class="auth-container">
+                <h2 class="section-title">世界に一点の証明</h2>
+                <div class="auth-content">
+                    <div class="auth-item">
+                        <h3>シリアルナンバー刻印</h3>
+                        <p>作品背面には、この宇宙に唯一、その瞬間の奇跡であることを証明する番号が刻名されます。</p>
+                    </div>
+                    <div class="auth-item">
+                        <h3>手書き作品証明書</h3>
+                        <p>アーティスト光導師 HIKARI が一点ずつ手書きで魂を込めてサインしたギャランティーカードを同梱します。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <!-- フッター -->
     <footer>
-        <p>&copy; 2026 LUMINA ART. すべての縁に感謝を。</p>
+        <div class="footer-logo">
+             <img src="glintria_logo.png" alt="GLINTRIA Logo" class="footer-icon">
+        </div>
+        <p>&copy; 2026 GLINTRIA. あなたのいる場所が、光り輝きますように。</p>
     </footer>
 
-    <!-- スクリプトのリンク（後ほど作成します） -->
+    <!-- スクリプト -->
     <script src="main.js"></script>
 </body>
 
