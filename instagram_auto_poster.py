@@ -5,14 +5,19 @@ import csv
 import json
 import time
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import urllib.request
 import urllib.parse
 import urllib.error
 
+import ssl
+
 # 設定ファイルのパス
 CONFIG_FILE = "config.json"
 SCHEDULE_FILE = "posts_schedule.csv"
+
+# SSL証明書検証をバイパスするコンテキスト
+SSL_CONTEXT = ssl._create_unverified_context()
 
 # GitHub Pages のベースURL（画像のローカルパス → 公開URLへの変換に使用）
 # ※ GitHub Pages を有効化した後、ここにあなたのURLを設定してください
@@ -53,7 +58,7 @@ def make_api_request(url, params=None, method="GET"):
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
     
     try:
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, context=SSL_CONTEXT) as response:
             res_data = response.read().decode("utf-8")
             return json.loads(res_data)
     except urllib.error.HTTPError as e:
@@ -178,12 +183,30 @@ def resolve_media_url(media_url):
         return resolved
 
 
+# ロックファイルのパス
+LOCK_FILE = "poster.lock"
+
 def process_schedule(dry_run=False):
     """CSVから予定されている投稿をチェックし、実行する
     
     Args:
         dry_run: Trueの場合、実際のAPI呼び出しは行わず、投稿内容の確認のみ行う
     """
+    if not dry_run:
+        if os.path.exists(LOCK_FILE):
+            print("[WARN] 他の投稿プロセスが実行中です。重複防止のため終了します。")
+            return
+        # ロックファイルを作成
+        with open(LOCK_FILE, "w") as f:
+            f.write(str(os.getpid()))
+
+    try:
+        _process_schedule_internal(dry_run)
+    finally:
+        if not dry_run and os.path.exists(LOCK_FILE):
+            os.remove(LOCK_FILE)
+
+def _process_schedule_internal(dry_run=False):
     config = load_config()
     
     if dry_run:
@@ -215,7 +238,9 @@ def process_schedule(dry_run=False):
     rows = []
     headers = []
     updated = False
-    now = datetime.now()
+    # 日本時間(JST)の現在時刻を取得
+    JST = timezone(timedelta(hours=+9), 'JST')
+    now = datetime.now(JST).replace(tzinfo=None)
 
     with open(SCHEDULE_FILE, "r", encoding="utf-8") as f:
         reader = csv.reader(f)
@@ -274,7 +299,7 @@ def process_schedule(dry_run=False):
             if not (resolved_url.startswith("http://") or resolved_url.startswith("https://")):
                 print(f"[ERROR] 投稿失敗: メディアURL '{resolved_url}' は公開URLである必要があります。")
                 rows[i][5] = "failed"
-                rows[i][6] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                rows[i][6] = now.strftime("%Y-%m-%d %H:%M:%S")
                 rows[i][7] = "error: could not resolve to public URL"
                 updated = True
                 continue
@@ -283,11 +308,11 @@ def process_schedule(dry_run=False):
             
             if success:
                 rows[i][5] = "posted"
-                rows[i][6] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                rows[i][6] = now.strftime("%Y-%m-%d %H:%M:%S")
                 rows[i][7] = result
             else:
                 rows[i][5] = "failed"
-                rows[i][6] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                rows[i][6] = now.strftime("%Y-%m-%d %H:%M:%S")
                 rows[i][7] = result
                 
             updated = True

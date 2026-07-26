@@ -1,5 +1,65 @@
-id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
-1,2026-08-01 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/01_choice.png,IMAGE,"直感で選んだ色で、いまの状態がわかります。
+#!/usr/bin/env python3
+"""
+2026年8月 フェーズ1 投稿30日分のビルドスクリプト
+
+このファイル1つが「投稿内容の正本」。ここを編集して再実行すると、
+画像・スケジュールCSV・確認用マークダウンがすべて作り直される。
+
+出力:
+  post_images/aug/*.png       投稿画像（すべて新規描画。実物のアート写真は不使用）
+  posts_schedule.csv          自動投稿用スケジュール（status は draft）
+  フェーズ1_投稿30日分_2026年8月.md   人が読んで確認するための一覧
+
+暦の出典（2026年8月）:
+  一粒万倍日 8/3・8/13・8/18・8/25・8/30
+  大安       8/6・8/12・8/17・8/23・8/29
+  寅の日     8/8・8/20   巳の日 8/11・8/23（8/23は己巳の日）
+  甲子の日   8/18        鬼宿日 8/14
+  新月       8/13 02:36  満月   8/28 13:18
+  天赦日     8月はなし（次は10/1・一粒万倍日と重なる）
+
+使い方:
+    python3 build_august.py
+"""
+
+import os
+import csv
+
+from generate_post_images import make_text_card, make_choice_sheet
+
+IMG_DIR = "post_images/aug"
+CSV_FILE = "posts_schedule.csv"
+DOC_FILE = "フェーズ1_投稿30日分_2026年8月.md"
+
+# 画像を置く公開URLのベース（GitHub Pages）。
+# Instagram Graph API はローカルパスを受け付けないため、公開URLが必須。
+# リポジトリ: https://github.com/tachikoma865/happyart
+MEDIA_BASE = "https://tachikoma865.github.io/happyart/post_images/aug"
+
+TAGS = {
+    "choice": "#選択占い #直感占い #色占い #今日の占い #当たる占い #占い好きな人と繋がりたい #スピリチュアル #開運",
+    "koyomi": "#開運日 #一粒万倍日 #暦 #吉日 #開運カレンダー #開運 #スピリチュアル #占い好きな人と繋がりたい",
+    "tech": "#開運 #開運習慣 #開運アクション #暮らしの知恵 #運気アップ #スピリチュアル #丁寧な暮らし",
+    "color": "#色の意味 #カラー診断 #色占い #開運カラー #スピリチュアル #占い好きな人と繋がりたい #開運",
+}
+
+# ---------------------------------------------------------------
+# 投稿データ（30日分）
+#   date     : 投稿日
+#   kind     : REEL / CAROUSEL
+#   pillar   : 柱（1=選択占い 2=暦 3=実用テク 4=色数字）
+#   file     : 画像ファイル名
+#   kicker   : 画像の小見出し
+#   title    : 画像の主タイトル（\n で改行）
+#   sub      : 画像の補足行
+#   color    : 配色（gold / blue / pink）
+#   caption  : 投稿キャプション本文
+# ---------------------------------------------------------------
+
+POSTS = [
+    dict(
+        date="2026-08-01", kind="REEL", pillar=1, file="01_choice", color=None,
+        caption="""直感で選んだ色で、いまの状態がわかります。
 
 1・金／2・青／3・桃
 考える前に、目が留まった色が答えです。
@@ -26,10 +86,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 はじめまして。ひかりです。
 色と暦から、毎日をすこし整えるヒントを置いていきます。
 
-あなたは何番でしたか？ コメントで教えてください👀
-
-#選択占い #直感占い #色占い #今日の占い #当たる占い #占い好きな人と繋がりたい #スピリチュアル #開運",draft,,
-2,2026-08-02 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/02_calendar.png,IMAGE,"【保存推奨】8月の開運日カレンダー
+あなたは何番でしたか？ コメントで教えてください👀""", tag="choice",
+    ),
+    dict(
+        date="2026-08-02", kind="CAROUSEL", pillar=2, file="02_calendar",
+        kicker="暦のはなし", title="8月の\n開運日カレンダー", sub="保存して手帳に入れておくと便利です",
+        color="gold",
+        caption="""【保存推奨】8月の開運日カレンダー
 
 暦の上で「良い日」とされている日をまとめました。
 スクショして手帳に入れておくと便利です。
@@ -53,10 +116,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 そして、ひとつお伝えしておくことがあります。
 8月に天赦日はありません。次は10月1日で、一粒万倍日と重なります。
 
-8月、何か始めたいことはありますか？
-
-#開運日 #一粒万倍日 #暦 #吉日 #開運カレンダー #開運 #スピリチュアル #占い好きな人と繋がりたい",draft,,
-3,2026-08-03 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/03_ichiryu.png,IMAGE,"今日 8/3（月）は一粒万倍日です。
+8月、何か始めたいことはありますか？""", tag="koyomi",
+    ),
+    dict(
+        date="2026-08-03", kind="REEL", pillar=2, file="03_ichiryu",
+        kicker="今日は", title="一粒万倍日", sub="始めることに向くとされる日",
+        color="gold",
+        caption="""今日 8/3（月）は一粒万倍日です。
 
 一粒の籾が万倍にも実る、という意味を持つ日。
 昔から「始めること」に向くとされてきました。
@@ -72,10 +138,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 借金やものを増やしすぎることは避けたほうがいい、とも言われてきました。
 
 今日、何か小さく始めますか？
-コメントで教えてください。
-
-#開運日 #一粒万倍日 #暦 #吉日 #開運カレンダー #開運 #スピリチュアル #占い好きな人と繋がりたい",draft,,
-4,2026-08-04 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/04_wallet.png,IMAGE,"新しい財布、買ってすぐ使っていませんか。
+コメントで教えてください。""", tag="koyomi",
+    ),
+    dict(
+        date="2026-08-04", kind="CAROUSEL", pillar=3, file="04_wallet",
+        kicker="開運のいとなみ", title="財布の使い始めで\n知っておきたいこと", sub="昔から言われている4つの習わし",
+        color="blue",
+        caption="""新しい財布、買ってすぐ使っていませんか。
 
 昔から言われている「使い始め方」があります。
 
@@ -99,10 +168,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 1と2は「そういう習わし」として楽しむくらいがちょうどいいと思っています。
 
 次の一粒万倍日は 8/13（木）です。
-あなたはどれかやっていますか？
-
-#開運 #開運習慣 #開運アクション #暮らしの知恵 #運気アップ #スピリチュアル #丁寧な暮らし",draft,,
-5,2026-08-05 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/05_color_gold.png,IMAGE,"金は、どうして「豊かさの色」と言われるようになったのか。
+あなたはどれかやっていますか？""", tag="tech",
+    ),
+    dict(
+        date="2026-08-05", kind="CAROUSEL", pillar=4, file="05_color_gold",
+        kicker="色のはなし", title="金という色が\n持ってきたもの", sub="豊かさの象徴とされてきた理由",
+        color="gold",
+        caption="""金は、どうして「豊かさの色」と言われるようになったのか。
 
 理由のひとつは、単純に希少だったからです。
 簡単には手に入らないものが、そのまま価値の象徴になりました。
@@ -118,10 +190,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 だから「効く色」というより、「そう扱われてきた色」と考えるほうが、
 私はしっくりきます。
 
-あなたは金色に、どんな印象がありますか？
-
-#色の意味 #カラー診断 #色占い #開運カラー #スピリチュアル #占い好きな人と繋がりたい #開運",draft,,
-6,2026-08-06 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/06_taian.png,IMAGE,"今日 8/6（木）は大安です。
+あなたは金色に、どんな印象がありますか？""", tag="color",
+    ),
+    dict(
+        date="2026-08-06", kind="REEL", pillar=2, file="06_taian",
+        kicker="今日は", title="大安", sub="六曜でもっとも穏やかとされる日",
+        color="gold",
+        caption="""今日 8/6（木）は大安です。
 
 六曜のなかで「何をするにも障りがない」とされてきた日。
 結婚式や納車、契約などを合わせる人が多い日です。
@@ -136,10 +211,11 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 それでも何百年も使われ続けてきたのは、
 「日を選ぶ」という行為そのものに、意味があったからかもしれません。
 
-今日は何か決めごとをしますか？
-
-#開運日 #一粒万倍日 #暦 #吉日 #開運カレンダー #開運 #スピリチュアル #占い好きな人と繋がりたい",draft,,
-7,2026-08-07 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/07_choice.png,IMAGE,"なんとなく疲れている人へ。
+今日は何か決めごとをしますか？""", tag="koyomi",
+    ),
+    dict(
+        date="2026-08-07", kind="REEL", pillar=1, file="07_choice", color=None,
+        caption="""なんとなく疲れている人へ。
 
 直感で1色選んでください。
 1・金／2・青／3・桃
@@ -160,10 +236,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 人に気を遣いすぎて、自分の分が残っていない時期。
 断ってもいい場面が、たぶんひとつあります。
 
-何番でしたか？ コメントで教えてください。
-
-#選択占い #直感占い #色占い #今日の占い #当たる占い #占い好きな人と繋がりたい #スピリチュアル #開運",draft,,
-8,2026-08-08 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/08_tora.png,IMAGE,"今日 8/8（土）は寅の日です。
+何番でしたか？ コメントで教えてください。""", tag="choice",
+    ),
+    dict(
+        date="2026-08-08", kind="REEL", pillar=2, file="08_tora",
+        kicker="今日は", title="寅の日", sub="出したものが戻るとされる日",
+        color="gold",
+        caption="""今日 8/8（土）は寅の日です。
 
 寅は「千里を行って千里を帰る」と言われてきた動物。
 そこから、出したものが戻ってくる日とされてきました。
@@ -178,10 +257,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 
 8月の寅の日は 8/8（土）と 8/20（木）の2日だけです。
 
-言い伝えの理屈が分かると、暦は少し面白くなります。
-
-#開運日 #一粒万倍日 #暦 #吉日 #開運カレンダー #開運 #スピリチュアル #占い好きな人と繋がりたい",draft,,
-9,2026-08-09 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/09_genkan.png,IMAGE,"玄関は「気の入口」と言われてきました。
+言い伝えの理屈が分かると、暦は少し面白くなります。""", tag="koyomi",
+    ),
+    dict(
+        date="2026-08-09", kind="CAROUSEL", pillar=3, file="09_genkan",
+        kicker="開運のいとなみ", title="玄関で\nやめたほうがいいこと", sub="今日からできる5つ",
+        color="blue",
+        caption="""玄関は「気の入口」と言われてきました。
 
 理屈を抜きにしても、毎日必ず通る場所なので、
 ここが整っているかどうかは体感でわかります。
@@ -206,10 +288,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 
 3だけは言い伝えですが、1・2・4・5は普通に暮らしが軽くなります。
 
-今日、靴を1足しまうところからどうぞ。
-
-#開運 #開運習慣 #開運アクション #暮らしの知恵 #運気アップ #スピリチュアル #丁寧な暮らし",draft,,
-10,2026-08-10 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/10_color_blue.png,IMAGE,"青は、人がいちばん最後に名前をつけた色だと言われます。
+今日、靴を1足しまうところからどうぞ。""", tag="tech",
+    ),
+    dict(
+        date="2026-08-10", kind="CAROUSEL", pillar=4, file="10_color_blue",
+        kicker="色のはなし", title="青が\n静けさの色になるまで", sub="水と空が結びついた色",
+        color="blue",
+        caption="""青は、人がいちばん最後に名前をつけた色だと言われます。
 
 古い言語には「青」を指す言葉がないものが多く、
 緑や黒とひとまとめにされていました。
@@ -224,10 +309,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 見上げても、見下ろしても青がある。
 それが落ち着きの感覚につながっているのだと思います。
 
-あなたは青を見て、何を思い出しますか？
-
-#色の意味 #カラー診断 #色占い #開運カラー #スピリチュアル #占い好きな人と繋がりたい #開運",draft,,
-11,2026-08-11 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/11_mi.png,IMAGE,"今日 8/11（火）は巳の日です。
+あなたは青を見て、何を思い出しますか？""", tag="color",
+    ),
+    dict(
+        date="2026-08-11", kind="REEL", pillar=2, file="11_mi",
+        kicker="今日は", title="巳の日", sub="弁財天にゆかりのある日",
+        color="blue",
+        caption="""今日 8/11（火）は巳の日です。
 
 蛇は弁財天の遣いとされてきました。
 弁財天は音楽や言葉、そして財をつかさどるとされる神さま。
@@ -243,10 +331,11 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 しかもその日は「己巳の日」といって、60日に一度しか巡ってきません。
 さらに大安とも重なります。
 
-8/23、手帳に印をつけておいてください。
-
-#開運日 #一粒万倍日 #暦 #吉日 #開運カレンダー #開運 #スピリチュアル #占い好きな人と繋がりたい",draft,,
-12,2026-08-12 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/12_choice.png,IMAGE,"この投稿が流れてきた人へ。
+8/23、手帳に印をつけておいてください。""", tag="koyomi",
+    ),
+    dict(
+        date="2026-08-12", kind="REEL", pillar=1, file="12_choice", color=None,
+        caption="""この投稿が流れてきた人へ。
 
 直感で1色選んでください。
 1・金／2・青／3・桃
@@ -268,10 +357,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 明日でもいいですが、今日のほうが軽いです。
 
 明日 8/13 は新月と一粒万倍日が重なる日です。
-何番だったか、コメントで教えてください。
-
-#選択占い #直感占い #色占い #今日の占い #当たる占い #占い好きな人と繋がりたい #スピリチュアル #開運",draft,,
-13,2026-08-13 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/13_shingetsu.png,IMAGE,"今日 8/13（木）は、新月と一粒万倍日が重なります。
+何番だったか、コメントで教えてください。""", tag="choice",
+    ),
+    dict(
+        date="2026-08-13", kind="REEL", pillar=2, file="13_shingetsu",
+        kicker="8月13日", title="新月と一粒万倍日が\n重なる日", sub="願いを書き出すなら今日",
+        color="pink",
+        caption="""今日 8/13（木）は、新月と一粒万倍日が重なります。
 
 新月は午前2時36分。
 月が姿を消して、そこからまた満ちていく起点の日です。
@@ -292,10 +384,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 これは占いというより、自分が何を望んでいるのか整理する作業に近いです。
 書いてみると、意外と自分でも忘れていたことが出てきます。
 
-今日、何を書きますか？
-
-#開運日 #一粒万倍日 #暦 #吉日 #開運カレンダー #開運 #スピリチュアル #占い好きな人と繋がりたい",draft,,
-14,2026-08-14 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/14_kishuku.png,IMAGE,"今日 8/14（金）は鬼宿日です。
+今日、何を書きますか？""", tag="koyomi",
+    ),
+    dict(
+        date="2026-08-14", kind="REEL", pillar=2, file="14_kishuku",
+        kicker="今日は", title="鬼宿日", sub="鬼が家にいる日",
+        color="blue",
+        caption="""今日 8/14（金）は鬼宿日です。
 
 二十八宿という、月の位置で日を分ける暦の考え方があります。
 そのなかで鬼宿は、最良の日とされてきました。
@@ -310,10 +405,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 婚礼です。理由ははっきりしませんが、そう伝えられてきました。
 
 今日はお盆の時期でもあります。
-ご先祖のことを思い出す日として過ごすのも、いい使い方だと思います。
-
-#開運日 #一粒万倍日 #暦 #吉日 #開運カレンダー #開運 #スピリチュアル #占い好きな人と繋がりたい",draft,,
-15,2026-08-15 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/15_obon.png,IMAGE,"お盆は、ご先祖が家に帰ってくるとされる期間です。
+ご先祖のことを思い出す日として過ごすのも、いい使い方だと思います。""", tag="koyomi",
+    ),
+    dict(
+        date="2026-08-15", kind="CAROUSEL", pillar=3, file="15_obon",
+        kicker="暮らしのなかで", title="お盆に\nしてきたこと", sub="意味を知ると少し変わります",
+        color="gold",
+        caption="""お盆は、ご先祖が家に帰ってくるとされる期間です。
 
 やってきたことには、ひとつずつ意味があります。
 
@@ -336,10 +434,11 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 何もしない年があっても、それはそれで構わないと思っています。
 思い出した、というだけで十分な行事だと感じます。
 
-あなたの家では、何かしていますか？
-
-#開運 #開運習慣 #開運アクション #暮らしの知恵 #運気アップ #スピリチュアル #丁寧な暮らし",draft,,
-16,2026-08-16 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/16_choice.png,IMAGE,"今月、迷っていることがある人へ。
+あなたの家では、何かしていますか？""", tag="tech",
+    ),
+    dict(
+        date="2026-08-16", kind="REEL", pillar=1, file="16_choice", color=None,
+        caption="""今月、迷っていることがある人へ。
 
 直感で1色選んでください。
 1・金／2・青／3・桃
@@ -359,10 +458,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 誰かの意見が気になって決められない時期。
 相談相手を1人に絞ってみてください。
 
-何番でしたか？ コメントで教えてください。
-
-#選択占い #直感占い #色占い #今日の占い #当たる占い #占い好きな人と繋がりたい #スピリチュアル #開運",draft,,
-17,2026-08-17 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/17_souji.png,IMAGE,"掃除と運気の話はよく聞きますが、
+何番でしたか？ コメントで教えてください。""", tag="choice",
+    ),
+    dict(
+        date="2026-08-17", kind="CAROUSEL", pillar=3, file="17_souji",
+        kicker="開運のいとなみ", title="運気の話を抜きにしても\n効く掃除の順番", sub="上から、奥から、水まわり",
+        color="blue",
+        caption="""掃除と運気の話はよく聞きますが、
 順番の話はあまり出てこないので書きます。
 
 1. 上から下へ
@@ -382,10 +484,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 実際に水まわりは放っておくといちばん傷む場所です。
 先人の観察は、だいたい理にかなっています。
 
-今日、どこか1か所だけやりませんか。
-
-#開運 #開運習慣 #開運アクション #暮らしの知恵 #運気アップ #スピリチュアル #丁寧な暮らし",draft,,
-18,2026-08-18 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/18_kinoe.png,IMAGE,"今日 8/18（火）は、一粒万倍日と甲子の日が重なります。
+今日、どこか1か所だけやりませんか。""", tag="tech",
+    ),
+    dict(
+        date="2026-08-18", kind="REEL", pillar=2, file="18_kinoe",
+        kicker="8月18日", title="始まりに\nいちばん向く日", sub="一粒万倍日 × 甲子の日",
+        color="gold",
+        caption="""今日 8/18（火）は、一粒万倍日と甲子の日が重なります。
 
 甲子（きのえね）は、十干十二支のいちばん最初の組み合わせ。
 60日でひと回りする暦の、スタート地点にあたる日です。
@@ -404,10 +509,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 60日後、この日のことを覚えていたら、
 何が続いていて何がやめられたのか見返してみてください。
 
-今日、何を始めますか？
-
-#開運日 #一粒万倍日 #暦 #吉日 #開運カレンダー #開運 #スピリチュアル #占い好きな人と繋がりたい",draft,,
-19,2026-08-19 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/19_color_pink.png,IMAGE,"桃色は、日本では「桃の花の色」から来ています。
+今日、何を始めますか？""", tag="koyomi",
+    ),
+    dict(
+        date="2026-08-19", kind="CAROUSEL", pillar=4, file="19_color_pink",
+        kicker="色のはなし", title="桃色が\n縁の色とされるわけ", sub="実がなる前に咲く花の色",
+        color="pink",
+        caption="""桃色は、日本では「桃の花の色」から来ています。
 
 桃は中国から入ってきた木で、
 古くから邪気を払う木とされてきました。
@@ -425,10 +533,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 
 3月3日が桃の節句なのも、同じ流れの上にあります。
 
-あなたは桃色を、身につけますか？
-
-#色の意味 #カラー診断 #色占い #開運カラー #スピリチュアル #占い好きな人と繋がりたい #開運",draft,,
-20,2026-08-20 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/20_tora2.png,IMAGE,"今日 8/20（木）は寅の日です。
+あなたは桃色を、身につけますか？""", tag="color",
+    ),
+    dict(
+        date="2026-08-20", kind="REEL", pillar=2, file="20_tora2",
+        kicker="今日は", title="今月最後の\n寅の日", sub="出したものが戻るとされる日",
+        color="gold",
+        caption="""今日 8/20（木）は寅の日です。
 8月の寅の日は、これで最後になります。
 
 寅は「千里を行って千里を帰る」と言われてきた動物。
@@ -443,10 +554,11 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 
 次の寅の日は9月に入ります。
 
-今日はどこかへ出かけますか？
-
-#開運日 #一粒万倍日 #暦 #吉日 #開運カレンダー #開運 #スピリチュアル #占い好きな人と繋がりたい",draft,,
-21,2026-08-21 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/21_choice.png,IMAGE,"考えないで選んでください。
+今日はどこかへ出かけますか？""", tag="koyomi",
+    ),
+    dict(
+        date="2026-08-21", kind="REEL", pillar=1, file="21_choice", color=None,
+        caption="""考えないで選んでください。
 
 1・金／2・青／3・桃
 
@@ -466,10 +578,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 連絡を待っている状態が続いていませんか。
 こちらから出したほうが早い場面があります。
 
-何番でしたか？ コメントで教えてください。
-
-#選択占い #直感占い #色占い #今日の占い #当たる占い #占い好きな人と繋がりたい #スピリチュアル #開運",draft,,
-22,2026-08-22 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/22_nemuru.png,IMAGE,"北枕は縁起が悪い、と言われます。
+何番でしたか？ コメントで教えてください。""", tag="choice",
+    ),
+    dict(
+        date="2026-08-22", kind="CAROUSEL", pillar=3, file="22_nemuru",
+        kicker="開運のいとなみ", title="寝る向きの話", sub="北枕は縁起が悪い、の由来",
+        color="blue",
+        caption="""北枕は縁起が悪い、と言われます。
 でも、その由来を知ると印象が変わります。
 
 お釈迦さまが亡くなったとき、頭を北に向けていた。
@@ -490,10 +605,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 実際のところ、いちばん大事なのは
 「窓やドアの位置的に落ち着いて眠れるか」だと思っています。
 
-あなたはどっちを向いて寝ていますか？
-
-#開運 #開運習慣 #開運アクション #暮らしの知恵 #運気アップ #スピリチュアル #丁寧な暮らし",draft,,
-23,2026-08-23 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/23_tsuchinoto.png,IMAGE,"今日 8/23（日）は己巳（つちのとみ）の日です。
+あなたはどっちを向いて寝ていますか？""", tag="tech",
+    ),
+    dict(
+        date="2026-08-23", kind="REEL", pillar=2, file="23_tsuchinoto",
+        kicker="8月23日", title="60日に一度の\n己巳の日", sub="大安とも重なります",
+        color="gold",
+        caption="""今日 8/23（日）は己巳（つちのとみ）の日です。
 
 巳の日は蛇の日。蛇は弁財天の遣いとされてきました。
 そのなかでも己巳の日は60日に一度しか巡ってきません。
@@ -512,10 +630,11 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 お金だけでなく、言葉を扱う仕事の人にもゆかりのある日です。
 
 次の己巳の日は10月に入ります。
-今日、財布の中を一度出してみませんか。
-
-#開運日 #一粒万倍日 #暦 #吉日 #開運カレンダー #開運 #スピリチュアル #占い好きな人と繋がりたい",draft,,
-24,2026-08-24 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/24_choice.png,IMAGE,"8月も残り1週間です。
+今日、財布の中を一度出してみませんか。""", tag="koyomi",
+    ),
+    dict(
+        date="2026-08-24", kind="REEL", pillar=1, file="24_choice", color=None,
+        caption="""8月も残り1週間です。
 直感で1色選んでください。
 
 1・金／2・青／3・桃
@@ -534,10 +653,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 夏のあいだ会えなかった人のことが浮かんでいませんか。
 
 今週末 8/28 は満月です。
-何番でしたか？ コメントで教えてください。
-
-#選択占い #直感占い #色占い #今日の占い #当たる占い #占い好きな人と繋がりたい #スピリチュアル #開運",draft,,
-25,2026-08-25 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/25_ichiryu2.png,IMAGE,"今日 8/25（火）は一粒万倍日です。
+何番でしたか？ コメントで教えてください。""", tag="choice",
+    ),
+    dict(
+        date="2026-08-25", kind="REEL", pillar=2, file="25_ichiryu2",
+        kicker="今日は", title="一粒万倍日", sub="8月は残り2日",
+        color="gold",
+        caption="""今日 8/25（火）は一粒万倍日です。
 
 8月の一粒万倍日は、今日と 8/30（日）の残り2日になりました。
 
@@ -553,10 +675,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 逆に、増えてほしくないものは
 この日に始めないほうがいい、とも言われてきました。
 
-今日、何か小さく始めますか？
-
-#開運日 #一粒万倍日 #暦 #吉日 #開運カレンダー #開運 #スピリチュアル #占い好きな人と繋がりたい",draft,,
-26,2026-08-26 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/26_number.png,IMAGE,"数字に意味がつくのは、だいたい言葉の音からです。
+今日、何か小さく始めますか？""", tag="koyomi",
+    ),
+    dict(
+        date="2026-08-26", kind="CAROUSEL", pillar=4, file="26_number",
+        kicker="数字のはなし", title="日本で\n数字に意味がついた話", sub="8はなぜ縁起がいいのか",
+        color="gold",
+        caption="""数字に意味がつくのは、だいたい言葉の音からです。
 
 ▸ 8
 末広がり。漢数字の「八」が下に広がる形だから。
@@ -578,10 +703,11 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 中国では8は「発（お金が増える）」と音が近いから縁起がいい。
 日本とは理由が違うのに、結論だけ同じです。
 
-あなたの好きな数字はいくつですか？
-
-#色の意味 #カラー診断 #色占い #開運カラー #スピリチュアル #占い好きな人と繋がりたい #開運",draft,,
-27,2026-08-27 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/27_choice.png,IMAGE,"明日は満月です。
+あなたの好きな数字はいくつですか？""", tag="color",
+    ),
+    dict(
+        date="2026-08-27", kind="REEL", pillar=1, file="27_choice", color=None,
+        caption="""明日は満月です。
 その前に、直感で1色選んでください。
 
 1・金／2・青／3・桃
@@ -600,10 +726,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 気を遣う相手との距離を、少しだけ変えてもいい時期。
 
 明日 8/28 の満月は、手放しのタイミングと言われます。
-何番でしたか？ コメントで教えてください。
-
-#選択占い #直感占い #色占い #今日の占い #当たる占い #占い好きな人と繋がりたい #スピリチュアル #開運",draft,,
-28,2026-08-28 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/28_mangetsu.png,IMAGE,"今日 8/28（金）は満月です。午後1時18分。
+何番でしたか？ コメントで教えてください。""", tag="choice",
+    ),
+    dict(
+        date="2026-08-28", kind="REEL", pillar=2, file="28_mangetsu",
+        kicker="8月28日", title="満月", sub="手放しのタイミングとされる日",
+        color="blue",
+        caption="""今日 8/28（金）は満月です。午後1時18分。
 
 月が満ちきる日。
 ここから欠けていくので、昔から「手放し」と結びつけられてきました。
@@ -620,10 +749,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 
 ひとつ手放すと、次に入る場所ができます。
 
-今日、何を手放しますか？
-
-#開運日 #一粒万倍日 #暦 #吉日 #開運カレンダー #開運 #スピリチュアル #占い好きな人と繋がりたい",draft,,
-29,2026-08-29 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/29_furikaeri.png,IMAGE,"8月ももうすぐ終わります。
+今日、何を手放しますか？""", tag="koyomi",
+    ),
+    dict(
+        date="2026-08-29", kind="CAROUSEL", pillar=3, file="29_furikaeri",
+        kicker="月の終わりに", title="8月を\n振り返る5つの問い", sub="3分で書けます",
+        color="pink",
+        caption="""8月ももうすぐ終わります。
 月末に一度立ち止まると、翌月の入り方が変わります。
 
 紙かスマホのメモに、5つだけ書いてみてください。
@@ -642,10 +774,13 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 来月、また同じ5つを書いてみると、
 自分が何を繰り返しているのかが見えてきます。
 
-9月の開運日は、明日まとめてお知らせします。
-
-#開運 #開運習慣 #開運アクション #暮らしの知恵 #運気アップ #スピリチュアル #丁寧な暮らし",draft,,
-30,2026-08-30 21:00:00,https://tachikoma865.github.io/happyart/post_images/aug/30_ichiryu3.png,IMAGE,"今日 8/30（日）は、8月最後の一粒万倍日です。
+9月の開運日は、明日まとめてお知らせします。""", tag="tech",
+    ),
+    dict(
+        date="2026-08-30", kind="REEL", pillar=2, file="30_ichiryu3",
+        kicker="8月最後の", title="一粒万倍日", sub="そして9月の開運日",
+        color="gold",
+        caption="""今日 8/30（日）は、8月最後の一粒万倍日です。
 
 8月を振り返ると、こんな月でした。
 ▸ 一粒万倍日 5日
@@ -665,6 +800,90 @@ id,post_time,media_url,media_type,caption,status,posted_at,instagram_post_id
 その日に向けて準備しておくといいかもしれません。
 
 9月の開運日カレンダーは、明日お届けします。
-今日、何か小さく始めますか？
+今日、何か小さく始めますか？""", tag="koyomi",
+    ),
+]
 
-#開運日 #一粒万倍日 #暦 #吉日 #開運カレンダー #開運 #スピリチュアル #占い好きな人と繋がりたい",draft,,
+
+def build_images():
+    os.makedirs(IMG_DIR, exist_ok=True)
+    print(f"[1/3] 画像を生成中（{len(POSTS)}件）...")
+    for i, p in enumerate(POSTS):
+        path = f"{IMG_DIR}/{p['file']}.png"
+        if p["pillar"] == 1:
+            # 選択占いは3色シート。回ごとに模様が変わるようseedを振る
+            img = make_choice_sheet(seed=7 + i * 31)
+        else:
+            img = make_text_card(
+                p["title"], p["sub"], key=p["color"],
+                seed=100 + i * 13, kicker=p.get("kicker"),
+            )
+        img.save(path)
+    print(f"      → {IMG_DIR}/ に {len(POSTS)} 枚")
+
+
+def build_csv():
+    print("[2/3] posts_schedule.csv を生成中...")
+    headers = ["id", "post_time", "media_url", "media_type", "caption",
+               "status", "posted_at", "instagram_post_id"]
+    with open(CSV_FILE, "w", encoding="utf-8", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(headers)
+        for i, p in enumerate(POSTS, start=1):
+            caption = p["caption"].strip() + "\n\n" + TAGS[p["tag"]]
+            w.writerow([
+                i,
+                f"{p['date']} 21:00:00",
+                f"{MEDIA_BASE}/{p['file']}.png",
+                "IMAGE",
+                caption,
+                "draft",   # ← 画像を公開URLに上げて確認するまでは投稿させない
+                "", "",
+            ])
+    print(f"      → {CSV_FILE}（status は全件 draft）")
+
+
+def build_doc():
+    print("[3/3] 確認用マークダウンを生成中...")
+    pillar_name = {1: "選択占い", 2: "暦・開運日", 3: "開運の実用テク", 4: "色・数字の意味"}
+    lines = [
+        "# フェーズ1 投稿30日分（2026年8月）",
+        "",
+        "`build_august.py` から自動生成。**内容を直すときは build_august.py を編集して再実行してください。**",
+        "",
+        "## 一覧",
+        "",
+        "| # | 日付 | 形式 | 柱 | 内容 |",
+        "|---|---|---|---|---|",
+    ]
+    for i, p in enumerate(POSTS, start=1):
+        head = p["caption"].strip().split("\n")[0]
+        lines.append(
+            f"| {i} | {p['date']} | {p['kind']} | {pillar_name[p['pillar']]} | {head} |")
+
+    lines += ["", "## 本文", ""]
+    for i, p in enumerate(POSTS, start=1):
+        lines += [
+            f"### {i}. {p['date']}（{p['kind']}／{pillar_name[p['pillar']]}）",
+            "",
+            f"**画像**：`{IMG_DIR}/{p['file']}.png`",
+            "",
+            "```",
+            p["caption"].strip(),
+            "",
+            TAGS[p["tag"]],
+            "```",
+            "",
+        ]
+    with open(DOC_FILE, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+    print(f"      → {DOC_FILE}")
+
+
+if __name__ == "__main__":
+    build_images()
+    build_csv()
+    build_doc()
+    print("\n完了。")
+    print("※ CSVのstatusは全件 draft です。画像を公開URLに上げてMEDIA_BASEを")
+    print("   書き換え、内容を確認してから pending に変えてください。")
