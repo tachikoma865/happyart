@@ -38,22 +38,30 @@ def load_config():
     return cfg
 
 
+class NetworkError(Exception):
+    """APIに到達できなかった（トークンの問題ではない）ことを表す"""
+
+
 def api_get(url, params):
     query = urllib.parse.urlencode(params)
     full = f"{url}?{query}"
     req = urllib.request.Request(full, method="GET")
     try:
-        with urllib.request.urlopen(req) as res:
+        with urllib.request.urlopen(req, timeout=30) as res:
             return json.loads(res.read().decode("utf-8")), None
     except urllib.error.HTTPError as e:
+        # サーバーが応答している＝到達はできている。トークンや権限の問題。
         body = e.read().decode("utf-8")
         try:
             err = json.loads(body).get("error", {})
             return None, err.get("message", body)
         except Exception:
             return None, body
+    except urllib.error.URLError as e:
+        # そもそも接続できていない。ネットワーク側の問題であって、設定の問題ではない。
+        raise NetworkError(str(e.reason))
     except Exception as e:
-        return None, str(e)
+        raise NetworkError(str(e))
 
 
 def main():
@@ -67,6 +75,22 @@ def main():
     print(" Instagram 連携 健康診断")
     print("=" * 50)
 
+    ok = True
+
+    try:
+        run_checks(base, token, ig_id)
+    except NetworkError as e:
+        print(f"\n[中断] Meta のAPIに接続できませんでした: {e}")
+        print("\nこれは設定やトークンの問題ではなく、ネットワーク側の問題です。")
+        print("次を確認してください。")
+        print("  ・インターネットに繋がっているか")
+        print("  ・社内ネットワークやVPN、プロキシで graph.facebook.com が塞がれていないか")
+        print("  ・（Claudeの作業環境から実行した場合）外部APIへの接続が制限されています。")
+        print("    お使いのMacのターミナルから実行してください。")
+        sys.exit(2)
+
+
+def run_checks(base, token, ig_id):
     ok = True
 
     # 1. トークン有効性

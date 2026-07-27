@@ -107,8 +107,18 @@ def check_media_status(media_container_id, config):
         
     return False, "タイムアウト（動画処理に時間がかかりすぎています）"
 
-def post_to_instagram(media_url, caption, media_type, config):
-    """Instagramに画像または動画を投稿するフローを実行する"""
+def post_to_instagram(media_url, caption, media_type, config, dry_run=False):
+    """
+    Instagramに画像または動画を投稿するフローを実行する。
+
+    dry_run=True のときは「メディアコンテナの作成」までで止める。
+    コンテナ作成の時点で、
+      ・アクセストークンと権限が有効か
+      ・画像URLにMeta側から到達できるか
+      ・キャプションが受け付けられるか
+    がすべて検証されるため、実際に投稿せずに設定を確認できる。
+    作られたコンテナは公開しなければ24時間で自動的に消える。
+    """
     access_token = config["ACCESS_TOKEN"]
     instagram_id = config["INSTAGRAM_BUSINESS_ACCOUNT_ID"]
     version = config["GRAPH_API_VERSION"]
@@ -146,7 +156,12 @@ def post_to_instagram(media_url, caption, media_type, config):
         success, err = check_media_status(creation_id, config)
         if not success:
             return False, err
-            
+
+    # dry-run はここで終了。公開はしない。
+    if dry_run:
+        print("[DRY-RUN] 検証はここまでです。公開（media_publish）は行いません。")
+        return True, f"dry-run OK (container: {creation_id})"
+
     # 3. メディアの公開（パブリッシュ）
     publish_url = f"https://graph.facebook.com/{version}/{instagram_id}/media_publish"
     publish_params = {
@@ -186,14 +201,82 @@ def resolve_media_url(media_url):
 # ロックファイルのパス
 LOCK_FILE = "poster.lock"
 
+# 1回の実行で投稿する最大件数
+#
+# Mac がスリープしていた等で cron が飛ぶと、期限切れの pending が複数溜まる。
+# その状態で次に起動すると、溜まった分が一気に連続投稿されてしまう。
+# （1日1本のはずが、21:05 に3本まとめて出るような事故になる）
+# そこで1回の実行につき1件までに制限する。取りこぼした分は翌日以降に順に消化される。
+MAX_POSTS_PER_RUN = 1
+
+# ロックがこの秒数より長く残っていたら、異常として解除する（30分）
+LOCK_MAX_AGE_SEC = 30 * 60
+
+def _clear_stale_lock():
+    """
+    置き去りになったロックファイルを片付ける。
+
+    スクリプトが強制終了（Macのスリープ、再起動、Ctrl-C、タイムアウト）で
+    落ちると poster.lock が残る。そのままだと以後の実行が毎回スキップされ、
+    投稿が静かに止まり続ける。実際に長期間投稿が止まる事故が起きている。
+
+    そこで「中のPIDのプロセスが生きているか」と「作られてから経った時間」を見て、
+    実行中でないと判断できる場合はロックを解除する。
+
+    戻り値: True=ロックを解除した（処理を続けてよい） / False=本当に実行中
+    """
+    try:
+        with open(LOCK_FILE) as f:
+            pid = int(f.read().strip())
+    except (ValueError, OSError):
+        print("[INFO] 壊れたロックファイルを削除しました。")
+        _remove_lock()
+        return True
+
+    # そのPIDのプロセスが生きているか確認する
+    try:
+        os.kill(pid, 0)
+        alive = True
+    except ProcessLookupError:
+        alive = False
+    except PermissionError:
+        alive = True  # 別ユーザーのプロセス。生きているとみなす
+    except OSError:
+        alive = False
+
+    if not alive:
+        print(f"[INFO] 前回の実行(PID {pid})は残っていません。古いロックを削除して続行します。")
+        _remove_lock()
+        return True
+
+    # 生きているが、あまりに長時間残っている場合は異常とみなす
+    try:
+        age = time.time() - os.path.getmtime(LOCK_FILE)
+    except OSError:
+        age = 0
+    if age > LOCK_MAX_AGE_SEC:
+        print(f"[WARN] ロックが {int(age / 60)} 分残っています。異常とみなして解除します。")
+        _remove_lock()
+        return True
+
+    return False
+
+
+def _remove_lock():
+    try:
+        os.remove(LOCK_FILE)
+    except OSError:
+        pass
+
+
 def process_schedule(dry_run=False):
     """CSVから予定されている投稿をチェックし、実行する
-    
+
     Args:
         dry_run: Trueの場合、実際のAPI呼び出しは行わず、投稿内容の確認のみ行う
     """
     if not dry_run:
-        if os.path.exists(LOCK_FILE):
+        if os.path.exists(LOCK_FILE) and not _clear_stale_lock():
             print("[WARN] 他の投稿プロセスが実行中です。重複防止のため終了します。")
             return
         # ロックファイルを作成
@@ -217,13 +300,16 @@ def _process_schedule_internal(dry_run=False):
     if not os.path.exists(SCHEDULE_FILE):
         # テンプレートCSVの作成
         headers = ["id", "post_time", "media_url", "media_type", "caption", "status", "posted_at", "instagram_post_id"]
+        # 注意：ここは status を "draft" にしておくこと。
+        # "pending" かつ過去日時にすると、CSVが無い状態でスクリプトを走らせた瞬間に
+        # このサンプルが本番投稿されてしまう（過去に実際に起きた事故）。
         sample_row = [
             "1",
-            "2026-07-21 20:00:00",
-            "product_images/gold_front.png",
+            "2099-01-01 21:00:00",
+            "https://example.com/replace-me.png",
             "IMAGE",
-            "【空間をパワースポットに変える、運命の光】\nGlint（輝き）＋ -ria（場所・国）を意味するアートブランド『GLINTRIA』始動。\n\n#スピリチュアル #波動 #引き寄せ",
-            "pending",
+            "サンプル行です。build_august.py で本番用のCSVを生成してください。",
+            "draft",
             "",
             ""
         ]
@@ -254,6 +340,8 @@ def _process_schedule_internal(dry_run=False):
 
     pending_count = sum(1 for row in rows if row[5].lower() == "pending")
     print(f"[INFO] スケジュール読み込み完了: 全{len(rows)}件 / 保留中(pending): {pending_count}件")
+
+    posted_this_run = 0
 
     # 各行のチェック
     for i, row in enumerate(rows):
@@ -293,6 +381,15 @@ def _process_schedule_internal(dry_run=False):
                 print(f"{'─' * 50}")
                 continue
             
+            # 1回の実行で投稿しすぎないようにする（連続投稿の事故防止）
+            # 成功だけでなく「試行」を数える。失敗を数えないと、
+            # 通信断のときに全件を試して全部 failed にしてしまう。
+            if posted_this_run >= MAX_POSTS_PER_RUN:
+                print(f"[INFO] ID {row_id} は今回は見送ります"
+                      f"（1回の実行につき{MAX_POSTS_PER_RUN}件まで。次回の実行で投稿されます）")
+                continue
+            posted_this_run += 1
+
             print(f"\n[EXEC] 投稿を実行します。ID: {row_id} | 予定時間: {post_time_str}")
             
             # 公開URLかチェック
@@ -310,12 +407,18 @@ def _process_schedule_internal(dry_run=False):
                 rows[i][5] = "posted"
                 rows[i][6] = now.strftime("%Y-%m-%d %H:%M:%S")
                 rows[i][7] = result
+                updated = True
             else:
                 rows[i][5] = "failed"
                 rows[i][6] = now.strftime("%Y-%m-%d %H:%M:%S")
                 rows[i][7] = result
-                
-            updated = True
+                updated = True
+                # 1件失敗した時点で、この回は打ち切る。
+                # 失敗の原因はトークン切れや通信断であることが多く、
+                # そのまま続けると残り全部を failed にして予定表を壊してしまう。
+                print("[WARN] 投稿に失敗したため、今回の実行はここで終了します。")
+                print("       原因を確認してから、該当行の status を pending に戻してください。")
+                break
         else:
             if dry_run:
                 # 未来の投稿も表示
@@ -344,21 +447,84 @@ def _process_schedule_internal(dry_run=False):
         print(f"[INFO] 実際に投稿するには: python3 instagram_auto_poster.py")
 
 
+def verify_schedule(limit=1):
+    """
+    実際のAPIを使った事前検証（投稿はしない）。
+
+    --dry-run は内容を表示するだけでAPIに触れないため、
+    「Metaが画像URLを取得できるか」「権限が足りているか」は分からない。
+
+    そこでこのモードでは、メディアコンテナの作成までを本番同様に実行する。
+    コンテナ作成が通れば、
+      ・トークンと権限が有効
+      ・Meta側から画像URLに到達できる
+      ・キャプションが受理される
+    ことが確認できる。公開しないコンテナは24時間で自動的に消える。
+    """
+    config = load_config()
+
+    if not os.path.exists(SCHEDULE_FILE):
+        print(f"[ERROR] '{SCHEDULE_FILE}' がありません。")
+        return
+
+    with open(SCHEDULE_FILE, "r", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        next(reader)
+        rows = [r for r in reader]
+
+    targets = [r for r in rows if r[5].lower() == "pending"][:limit]
+    if not targets:
+        print("[INFO] pending の投稿がありません。")
+        return
+
+    print("=" * 60)
+    print(f" 事前検証モード：{len(targets)}件をAPIで検証します（投稿はしません）")
+    print("=" * 60)
+
+    ng = 0
+    for row in targets:
+        row_id, post_time_str, media_url, media_type, caption = row[0], row[1], row[2], row[3], row[4]
+        resolved = resolve_media_url(media_url)
+        print(f"\n--- ID {row_id}（予定 {post_time_str}）---")
+
+        success, result = post_to_instagram(resolved, caption, media_type, config, dry_run=True)
+        if success:
+            print(f"[OK] 検証成功: {result}")
+        else:
+            print(f"[NG] {result}")
+            ng += 1
+
+    print("\n" + "=" * 60)
+    if ng == 0:
+        print(f" 結果: {len(targets)}件すべて検証OK。本番投稿できる状態です。")
+        print(" ※ 作成したコンテナは公開していないので、24時間で自動的に消えます。")
+    else:
+        print(f" 結果: {ng}件で問題がありました。上記の[NG]を確認してください。")
+    print("=" * 60)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Instagram自動投稿スクリプト（GLINTRIA）")
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="実際の投稿は行わず、投稿内容の確認のみ行う"
+        help="実際の投稿は行わず、投稿内容の確認のみ行う（APIには接続しない）"
     )
     parser.add_argument(
         "--list",
         action="store_true",
         help="全スケジュール（未来の予約含む）をdry-runで一覧表示する"
     )
+    parser.add_argument(
+        "--verify",
+        nargs="?", const=1, type=int, metavar="N",
+        help="APIで実際に検証する（投稿はしない）。先頭N件。既定は1件"
+    )
     args = parser.parse_args()
-    
-    if args.list:
+
+    if args.verify:
+        verify_schedule(limit=args.verify)
+    elif args.list:
         # --list の場合は全投稿をdry-runで表示
         process_schedule(dry_run=True)
     else:

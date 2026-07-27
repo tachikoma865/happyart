@@ -56,6 +56,57 @@ TAGS = {
 #   caption  : 投稿キャプション本文
 # ---------------------------------------------------------------
 
+### 先行投稿（7月末・8月分より前に出すもの）
+#
+# 8/1を待たずに実際の投稿で仕上がりを確認するために追加した分。
+# 暦に依存しない内容だけにしてあるので、日付をずらしても本文が崩れない。
+PRE_POSTS = [
+    dict(
+        date="2026-07-27", kind="REEL", pillar=1, file="pre01_hajimemashite", color=None,
+        caption="""はじめまして。ひかりです。
+
+色と暦から、毎日をすこし整えるヒントを置いていきます。
+
+さっそくですが、ひとつ。
+下の3色から、直感で1つ選んでください。
+
+1・金／2・青／3・桃
+
+考えないでください。
+先に目が留まったほうが、たいてい当たっています。
+
+・
+・
+・
+
+【1・金を選んだあなた】
+外に向かう力が高まっている時期。
+金は昔から、豊かさや成功の象徴とされてきた色です。
+やろうか迷っていることがあるなら、いまは「やってみる」側に倒していい頃かもしれません。
+
+【2・青を選んだあなた】
+少し休みたい、という気持ちがどこかにありませんか。
+青は水と空の色。静けさと結びつけられてきました。
+予定を足すより、ひとつ減らすほうがうまくいく時期です。
+
+【3・桃を選んだあなた】
+人との関わりに意識が向いています。
+桃色は昔から、縁を表す色とされてきました。
+しばらく連絡していない人の顔が浮かんだなら、それがきっかけかもしれません。
+
+このアカウントでは、こんなことを書いていきます。
+
+▸ 直感で選ぶ色占い
+▸ 一粒万倍日や新月など、暦の話
+▸ 今日からできる開運の習わし
+▸ 色や数字が持つ意味
+
+どれも「そう言われてきた」という話として、たのしく受け取ってもらえたらうれしいです。
+
+あなたは何番でしたか？ コメントで教えてください👀""", tag="choice",
+    ),
+]
+
 POSTS = [
     dict(
         date="2026-08-01", kind="REEL", pillar=1, file="01_choice", color=None,
@@ -83,8 +134,8 @@ POSTS = [
 桃色は昔から縁を表す色とされてきました。
 しばらく連絡していない人が浮かんだなら、それがサインかもしれません。
 
-はじめまして。ひかりです。
-色と暦から、毎日をすこし整えるヒントを置いていきます。
+8月が始まりました。
+今月の開運日は、明日まとめてお届けします。
 
 あなたは何番でしたか？ コメントで教えてください👀""", tag="choice",
     ),
@@ -805,10 +856,14 @@ POSTS = [
 ]
 
 
+# 先行投稿＋8月分。以降の処理はすべてこのリストを使う。
+ALL_POSTS = PRE_POSTS + POSTS
+
+
 def build_images():
     os.makedirs(IMG_DIR, exist_ok=True)
-    print(f"[1/3] 画像を生成中（{len(POSTS)}件）...")
-    for i, p in enumerate(POSTS):
+    print(f"[1/3] 画像を生成中（{len(ALL_POSTS)}件）...")
+    for i, p in enumerate(ALL_POSTS):
         path = f"{IMG_DIR}/{p['file']}.png"
         if p["pillar"] == 1:
             # 選択占いは3色シート。回ごとに模様が変わるようseedを振る
@@ -819,28 +874,58 @@ def build_images():
                 seed=100 + i * 13, kicker=p.get("kicker"),
             )
         img.save(path)
-    print(f"      → {IMG_DIR}/ に {len(POSTS)} 枚")
+    print(f"      → {IMG_DIR}/ に {len(ALL_POSTS)} 枚")
+
+
+def load_existing_state():
+    """
+    既存CSVの status / posted_at / 投稿ID を、画像ファイル名をキーに読み込む。
+
+    これをやらないと、作り直すたびに全行が draft に戻ってしまい、
+    投稿済み（posted）の記録まで消えて同じ投稿が二重に出てしまう。
+    IDは並び順で変わるので、キーには安定している画像ファイル名を使う。
+    """
+    if not os.path.exists(CSV_FILE):
+        return {}
+    state = {}
+    with open(CSV_FILE, encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            key = row["media_url"].rsplit("/", 1)[-1]
+            state[key] = (row["status"], row["posted_at"], row["instagram_post_id"])
+    return state
 
 
 def build_csv():
     print("[2/3] posts_schedule.csv を生成中...")
+    existing = load_existing_state()
+
     headers = ["id", "post_time", "media_url", "media_type", "caption",
                "status", "posted_at", "instagram_post_id"]
+    kept = 0
     with open(CSV_FILE, "w", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
         w.writerow(headers)
-        for i, p in enumerate(POSTS, start=1):
+        for i, p in enumerate(ALL_POSTS, start=1):
             caption = p["caption"].strip() + "\n\n" + TAGS[p["tag"]]
+            fname = f"{p['file']}.png"
+            # 既存の状態があれば引き継ぐ。無ければ新規なので draft から始める。
+            if fname in existing:
+                status, posted_at, post_id = existing[fname]
+                kept += 1
+            else:
+                status, posted_at, post_id = "draft", "", ""
             w.writerow([
                 i,
                 f"{p['date']} 21:00:00",
-                f"{MEDIA_BASE}/{p['file']}.png",
+                f"{MEDIA_BASE}/{fname}",
                 "IMAGE",
                 caption,
-                "draft",   # ← 画像を公開URLに上げて確認するまでは投稿させない
-                "", "",
+                status,
+                posted_at,
+                post_id,
             ])
-    print(f"      → {CSV_FILE}（status は全件 draft）")
+    new_count = len(ALL_POSTS) - kept
+    print(f"      → {CSV_FILE}（既存 {kept}件は状態を維持 / 新規 {new_count}件は draft）")
 
 
 def build_doc():
@@ -856,13 +941,13 @@ def build_doc():
         "| # | 日付 | 形式 | 柱 | 内容 |",
         "|---|---|---|---|---|",
     ]
-    for i, p in enumerate(POSTS, start=1):
+    for i, p in enumerate(ALL_POSTS, start=1):
         head = p["caption"].strip().split("\n")[0]
         lines.append(
             f"| {i} | {p['date']} | {p['kind']} | {pillar_name[p['pillar']]} | {head} |")
 
     lines += ["", "## 本文", ""]
-    for i, p in enumerate(POSTS, start=1):
+    for i, p in enumerate(ALL_POSTS, start=1):
         lines += [
             f"### {i}. {p['date']}（{p['kind']}／{pillar_name[p['pillar']]}）",
             "",

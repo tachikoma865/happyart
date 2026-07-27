@@ -34,57 +34,82 @@ next_due: 2026-07-28
 | — | ~~旧 roadmap v2/v3/v4・旧カレンダー3種・tracker CSV を破棄~~ | ✅ 完了(7/26) | — | 4月ローンチ前提の資料。v5 と混同するため削除 |
 | C | 販売プラットフォーム（STORES等）の開設 | 未着手 | — | フェーズ3で必要。一点物なので簡易でよい |
 
-## ⚠️ cron を直す前に必ず読むこと
+## ⚠️ cron を追加する前に必ず読むこと
 
-`posts_schedule.csv` を削除したため、**いま `instagram_auto_poster.py` を動かすとサンプル行を含む CSV が自動生成されます。**
-そのサンプル行の投稿日時は過去日付なので、**そのまま実行するとサンプル投稿が本番投稿されます。**
+~~サンプル行が本番投稿される問題~~ → **✅ 解消済み（7/26）**
+サンプル行は `status=draft` / 日付 2099年 に変更したので、暴発しなくなった。
+
+**cron は「壊れている」のではなく、happyart の行そのものが存在しない。**
+`crontab -l` に出るのは `note_1/AI/X` の2件だけ。**新規に追加する**作業になる。
 
 順序を守ること。
 
-1. フェーズ1の新しい投稿内容を作る
-2. 新しい `posts_schedule.csv` を作る
-3. `python3 instagram_auto_poster.py --dry-run` で内容を確認する
-4. そのあとで cron を直す
+1. ~~フェーズ1の新しい投稿内容を作る~~ ✅ 完了（8/1〜8/30の30件）
+2. ~~新しい `posts_schedule.csv` を作る~~ ✅ 完了（`build_august.py` が正本）
+3. ~~画像を公開URLに載せる~~ ✅ 完了（GitHub Pages）
+4. `python3 instagram_auto_poster.py --verify` で**APIを使った実検証**をする ← 次はここ
+5. そのあとで cron を追加する
 
-## 復旧手順（ターミナルで実行）
+> `--dry-run` は内容を表示するだけでAPIに接続しない。
+> Meta が画像URLを取得できるかまで確かめるには `--verify` を使うこと。
 
-### 1. いまの cron を確認する
+## 手順（ターミナルで実行）
+
+### 1. ~~起動スクリプトに実行権限を付ける~~ ✅ 完了（7/26）
+
+`run_poster.sh` は `-rw-------` で実行権限が無かった。`chmod +x` 済み。
+
+### 2. APIで事前検証する（投稿はされない）
+
+```bash
+cd /Users/tachikoma/product/test/happyart
+python3 instagram_auto_poster.py --verify
+```
+
+メディアコンテナの作成までを本番同様に実行して、
+トークン・権限・画像URLへの到達性をまとめて確認する。公開はしない。
+
+`検証OK` が出れば次へ。
+
+### 3. ~~cron に追加する~~ ✅ 完了（7/26）
+
+追加したのは1行。既存の `note_1/AI/X` の2件はそのまま残してある。
+
+```
+5 21 * * * /Users/tachikoma/product/test/happyart/run_poster.sh >> .../auto_poster.log 2>&1
+```
+
+以下は再設定が必要になったときのための記録。
+
+### （参考）cron に追加するコマンド
+
+エディタを開かずに追記する。**このまま貼り付けて実行**。
+
+```bash
+(crontab -l 2>/dev/null; echo "5 21 * * * /Users/tachikoma/product/test/happyart/run_poster.sh >> /Users/tachikoma/product/test/happyart/auto_poster.log 2>&1") | crontab -
+```
+
+確認：
 
 ```bash
 crontab -l
 ```
 
-`happyart` または `instagram_auto_poster.py` を含む行が、壊れている行。
+happyart の行を含めて3行になっていればOK。
 
-### 2. 起動スクリプトに実行権限を付ける
+Threads も同時に投稿する場合は末尾を `run_poster.sh --threads` にする。
 
-```bash
-chmod +x /Users/tachikoma/product/test/happyart/run_poster.sh
-```
-
-### 3. 手動で1回動かして、python が見つかるか確認する
+### 4. 手動で1回動かしてみる
 
 ```bash
 /Users/tachikoma/product/test/happyart/run_poster.sh
 ```
 
 `python3 = /opt/homebrew/bin/python3` のような行が出れば成功。
-
-### 4. cron を書き換える
-
-```bash
-crontab -e
-```
-
-古い行を消し、以下を1行入れる（毎日 21:05 実行）。
-
-```
-5 21 * * * /Users/tachikoma/product/test/happyart/run_poster.sh >> /Users/tachikoma/product/test/happyart/auto_poster.log 2>&1
-```
-
-Threads も同時に投稿する場合は末尾を `run_poster.sh --threads` にする。
+いまは8/1まで投稿予定が無いので「実行予定の投稿はありませんでした」と出るのが正常。
 
 > cron が macOS のフルディスクアクセスで弾かれる場合は launchd に切り替える。その際は相談すること。
+> 既存の `note_1/AI/X` の cron は動いているので、cron 自体は使える状態。
 
 ## 追加したファイル（2026-07-26）
 
@@ -93,12 +118,18 @@ Threads も同時に投稿する場合は末尾を `run_poster.sh --threads` に
 - `reschedule_pending.py` — 溜まった pending の日時を振り直す
 - `THREADS_セットアップ手引き.md` — Threads トークン取得手順
 
-## 稼働状況（2026-07-26 時点・ログ確認済み）
+## 稼働状況（2026-07-26 夜 時点）
 
-- `auto_poster.log` は **2026-07-23 11:15 で更新が止まっている**。中身は全行が `/bin/sh: /usr/local/bin/python3: No such file or directory`
-- 最後に投稿できたのは 2026-07-21 21:30（day2_pink）。**7/22 以降 5日間、投稿はゼロ**
-- `posts_schedule.csv` は 7/26 に破棄済み。投稿実績2件は `posted_log.md` に退避
-- → いまは「cron が壊れている」より「**投稿するコンテンツが無い**」ほうが上流。コンテンツ再作成 → CSV作成 → dry-run → cron の順を守る
+**復旧完了。8/1 21:00 から自動投稿が再開する状態。**
+
+- ✅ Instagram連携テスト全項目OK（`@kodoshi_hikari` / 投稿枠 0-100）
+- ✅ 8/1〜8/30 の30件を `pending` で登録済み
+- ✅ 画像30枚を GitHub Pages で公開。**Meta側から取得できることをAPIで実証済み**（コンテナ作成成功）
+- ✅ cron 登録済み（毎日 21:05）
+- ✅ `run_poster.sh` に実行権限を付与（付いていなかった）
+- ✅ サンプル行の暴発を修正（`draft` / 2099年に変更）
+
+次に何かあるとすれば **8/1 21:05 の初回実行**。翌朝 `auto_poster.log` を確認すること。
 
 ## 最近の進捗
 
@@ -107,10 +138,25 @@ Threads も同時に投稿する場合は末尾を `run_poster.sh --threads` に
 - 2026-07-26 run_poster.sh / threads_auto_poster.py / reschedule_pending.py / THREADS手引き を追加
 - 2026-07-21 Instagram 自動投稿を稼働開始。day1_gold・day2_pink の2件を投稿成功（以降 停止）
 
+## 自動投稿スクリプトに入れた安全装置（2026-07-26）
+
+過去に「5日間気づかず投稿が止まっていた」事故が起きているため、
+同じことが起きにくいように `instagram_auto_poster.py` へ3つ入れた。
+
+| 装置 | 何を防ぐか |
+|---|---|
+| `MAX_POSTS_PER_RUN = 1` | Macのスリープ等で溜まった分が、次回起動時に一気に連続投稿されるのを防ぐ。取りこぼしは翌日以降に1件ずつ消化される |
+| **1件失敗したら打ち切る** | トークン切れや通信断のときに、残り全部を `failed` にして予定表を壊すのを防ぐ。失敗は1件で止まり、残りは `pending` のまま残る |
+| **古いロックの自動解除** | 強制終了で `poster.lock` が残り、以後すべての実行が黙ってスキップされ続けるのを防ぐ。PIDの生死と経過時間（30分）で判定して解除する |
+
+いずれも検証済み。
+
 ## 注意
 
-- **7/22 以降、自動投稿は1件も成功していない。** ログは python3 のパス不正で埋まっている。実質5日間投稿が止まっている状態。
+- **トークンの有効期限は約60日**（取得日から）。9月下旬ごろに切れる。切れると投稿が止まるので、9月に入ったら再発行すること。手順は `API自動投稿セットアップ手引き.md` のフェーズ3。
+- **cron は Mac が起動している時しか動かない。** 21:05にスリープしていると当日分は飛ぶ。翌日の実行で1件ずつ消化される設計にはしてある。
 - 当初の原画販売計画（tracker CSV）と、現在動いている SNS 運用が別物になっている。片方に絞るか、tracker を書き直すのが良い。
+- 9月分の投稿は8月下旬までに作ること。8/30の投稿で「9月の開運日カレンダーは明日」と予告している。
 
 ## 参照
 
