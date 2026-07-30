@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>開運日カレンダー｜ひかり</title>
+<meta name="description" content="一粒万倍日・天赦日・寅の日・巳の日・新月・満月がひと目でわかる開運日カレンダー。今月と来月を自動で表示します。">
+<style>
+  :root{
+    --bg:#fcfaf6; --ink:#2e2822; --sub:#847c72; --gold:#c69c4a;
+    --line:#e8e0d2; --card:#fffdfa;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+    line-height:1.7; -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:680px;margin:0 auto;padding:28px 18px 64px}
+  header{text-align:center;margin-bottom:8px}
+  h1{
+    font-family:"Hiragino Mincho ProN","Noto Serif JP",serif;
+    font-size:26px;font-weight:600;margin:0 0 6px;letter-spacing:.04em;
+  }
+  .lead{color:var(--sub);font-size:13px;margin:0}
+  .today{
+    margin:22px 0 10px;padding:16px 18px;background:var(--card);
+    border:1px solid var(--line);border-radius:14px;
+  }
+  .today .label{font-size:12px;color:var(--sub);letter-spacing:.08em}
+  .today .date{
+    font-family:"Hiragino Mincho ProN","Noto Serif JP",serif;
+    font-size:21px;margin:2px 0 6px;
+  }
+  .today .tags{display:flex;flex-wrap:wrap;gap:6px}
+  .today .none{color:var(--sub);font-size:13px}
+  h2{
+    font-family:"Hiragino Mincho ProN","Noto Serif JP",serif;
+    font-size:19px;font-weight:600;margin:30px 0 12px;
+    padding-bottom:8px;border-bottom:1px solid var(--line);
+  }
+  ul{list-style:none;margin:0;padding:0}
+  li{
+    display:flex;gap:12px;align-items:flex-start;
+    padding:11px 2px;border-bottom:1px solid #f0ebe1;
+  }
+  li:last-child{border-bottom:none}
+  .day{
+    flex:0 0 58px;font-family:"Hiragino Mincho ProN","Noto Serif JP",serif;
+    font-size:17px;padding-top:1px;
+  }
+  .day small{font-size:12px;color:var(--sub);margin-left:3px}
+  .sat{color:#5b83a8}.sun{color:#b06a72}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;flex:1}
+  .tag{
+    font-size:12px;padding:3px 9px;border-radius:999px;
+    background:#f6f1e6;color:#7d6636;border:1px solid #ece2cd;white-space:nowrap;
+  }
+  .tag.strong{background:var(--gold);color:#fff;border-color:var(--gold)}
+  .tag.moon{background:#eef4f8;color:#4a6c86;border-color:#dde8ef}
+  .tag time{font-variant-numeric:tabular-nums;opacity:.85;margin-left:4px}
+  .hl{
+    margin:16px 0 0;padding:14px 16px;background:#fdf8ec;
+    border:1px solid #f0e4c8;border-radius:12px;font-size:13.5px;
+  }
+  .hl b{color:#8a6d2f}
+  details{margin-top:34px;border-top:1px solid var(--line);padding-top:18px}
+  summary{cursor:pointer;font-size:14px;color:var(--sub)}
+  dl{margin:14px 0 0}
+  dt{font-weight:600;margin-top:14px;font-size:14px}
+  dd{margin:4px 0 0;color:#5f574e;font-size:13.5px}
+  footer{margin-top:38px;text-align:center;color:var(--sub);font-size:12px;line-height:1.9}
+  footer a{color:var(--sub)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>開運日カレンダー</h1>
+    <p class="lead">一粒万倍日・天赦日・新月・満月がひと目でわかる</p>
+  </header>
+
+  <div class="today" id="today"></div>
+  <div id="months"></div>
+
+  <details>
+    <summary>それぞれの日の意味</summary>
+    <dl id="legend"></dl>
+  </details>
+
+  <footer>
+    どれも「そう言われてきた」という言い伝えです。<br>
+    たのしむ範囲で使ってもらえたらうれしいです。<br><br>
+    <a href="https://www.instagram.com/kodoshi_hikari/">Instagram @kodoshi_hikari</a>
+  </footer>
+</div>
+
+<script>
+const DATA = {"2026-07":[{"d":3,"w":"金","tags":["寅の日"],"times":{},"rokuyo":"大安"},{"d":6,"w":"月","tags":["一粒万倍日","巳の日"],"times":{},"rokuyo":"友引"},{"d":7,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":10,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"},{"d":14,"w":"火","tags":["新月"],"times":{"新月":"18:43"},"rokuyo":"赤口"},{"d":15,"w":"水","tags":["寅の日"],"times":{},"rokuyo":"先勝"},{"d":18,"w":"土","tags":["巳の日"],"times":{},"rokuyo":"仏滅"},{"d":19,"w":"日","tags":["天赦日","一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":22,"w":"水","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":27,"w":"月","tags":["寅の日"],"times":{},"rokuyo":"先勝"},{"d":29,"w":"水","tags":["満月"],"times":{"満月":"23:35"},"rokuyo":"先負"},{"d":30,"w":"木","tags":["巳の日"],"times":{},"rokuyo":"仏滅"},{"d":31,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"}],"2026-08":[{"d":3,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":8,"w":"土","tags":["寅の日"],"times":{},"rokuyo":"先勝"},{"d":11,"w":"火","tags":["巳の日"],"times":{},"rokuyo":"仏滅"},{"d":13,"w":"木","tags":["一粒万倍日","新月"],"times":{"新月":"2:36"},"rokuyo":"先勝"},{"d":18,"w":"火","tags":["一粒万倍日","甲子の日"],"times":{},"rokuyo":"赤口"},{"d":20,"w":"木","tags":["寅の日"],"times":{},"rokuyo":"友引"},{"d":23,"w":"日","tags":["己巳の日"],"times":{},"rokuyo":"大安"},{"d":25,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":28,"w":"金","tags":["満月"],"times":{"満月":"13:18"},"rokuyo":"仏滅"},{"d":30,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"}],"2026-09":[{"d":1,"w":"火","tags":["寅の日"],"times":{},"rokuyo":"友引"},{"d":4,"w":"金","tags":["巳の日"],"times":{},"rokuyo":"大安"},{"d":6,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":7,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":11,"w":"金","tags":["新月"],"times":{"新月":"12:26"},"rokuyo":"友引"},{"d":13,"w":"日","tags":["寅の日"],"times":{},"rokuyo":"仏滅"},{"d":14,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":16,"w":"水","tags":["巳の日"],"times":{},"rokuyo":"先勝"},{"d":19,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":25,"w":"金","tags":["寅の日"],"times":{},"rokuyo":"仏滅"},{"d":26,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":27,"w":"日","tags":["満月"],"times":{"満月":"1:48"},"rokuyo":"赤口"},{"d":28,"w":"月","tags":["巳の日"],"times":{},"rokuyo":"先勝"}],"2026-10":[{"d":1,"w":"木","tags":["天赦日","一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":7,"w":"水","tags":["寅の日"],"times":{},"rokuyo":"仏滅"},{"d":10,"w":"土","tags":["巳の日"],"times":{},"rokuyo":"先勝"},{"d":11,"w":"日","tags":["一粒万倍日","新月"],"times":{"新月":"0:49"},"rokuyo":"先負"},{"d":14,"w":"水","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"},{"d":17,"w":"土","tags":["甲子の日"],"times":{},"rokuyo":"先負"},{"d":19,"w":"月","tags":["寅の日"],"times":{},"rokuyo":"大安"},{"d":22,"w":"木","tags":["己巳の日"],"times":{},"rokuyo":"友引"},{"d":23,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":26,"w":"月","tags":["一粒万倍日","満月"],"times":{"満月":"13:11"},"rokuyo":"赤口"},{"d":31,"w":"土","tags":["寅の日"],"times":{},"rokuyo":"大安"}],"2026-11":[{"d":3,"w":"火","tags":["巳の日"],"times":{},"rokuyo":"友引"},{"d":4,"w":"水","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":9,"w":"月","tags":["一粒万倍日","新月"],"times":{"新月":"16:01"},"rokuyo":"仏滅"},{"d":10,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":12,"w":"木","tags":["寅の日"],"times":{},"rokuyo":"先勝"},{"d":15,"w":"日","tags":["巳の日"],"times":{},"rokuyo":"仏滅"},{"d":21,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":22,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":24,"w":"火","tags":["寅の日","満月"],"times":{"満月":"23:53"},"rokuyo":"先勝"},{"d":27,"w":"金","tags":["巳の日"],"times":{},"rokuyo":"仏滅"}],"2026-12":[{"d":3,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":4,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":6,"w":"日","tags":["寅の日"],"times":{},"rokuyo":"先勝"},{"d":7,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":9,"w":"水","tags":["巳の日","新月"],"times":{"新月":"9:51"},"rokuyo":"大安"},{"d":16,"w":"水","tags":["天赦日","一粒万倍日","甲子の日"],"times":{},"rokuyo":"赤口"},{"d":18,"w":"金","tags":["寅の日"],"times":{},"rokuyo":"友引"},{"d":19,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":21,"w":"月","tags":["己巳の日"],"times":{},"rokuyo":"大安"},{"d":24,"w":"木","tags":["満月"],"times":{"満月":"10:28"},"rokuyo":"友引"},{"d":28,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"},{"d":30,"w":"水","tags":["寅の日"],"times":{},"rokuyo":"友引"},{"d":31,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"}],"2027-01":[{"d":2,"w":"土","tags":["巳の日"],"times":{},"rokuyo":"大安"},{"d":8,"w":"金","tags":["新月"],"times":{"新月":"5:24"},"rokuyo":"赤口"},{"d":9,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":11,"w":"月","tags":["寅の日"],"times":{},"rokuyo":"先負"},{"d":12,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":14,"w":"木","tags":["巳の日"],"times":{},"rokuyo":"赤口"},{"d":21,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":22,"w":"金","tags":["満月"],"times":{"満月":"21:17"},"rokuyo":"友引"},{"d":23,"w":"土","tags":["寅の日"],"times":{},"rokuyo":"先負"},{"d":24,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":26,"w":"火","tags":["巳の日"],"times":{},"rokuyo":"赤口"}],"2027-02":[{"d":2,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":4,"w":"木","tags":["寅の日"],"times":{},"rokuyo":"先負"},{"d":7,"w":"日","tags":["巳の日","新月"],"times":{"新月":"0:55"},"rokuyo":"先勝"},{"d":8,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":14,"w":"日","tags":["甲子の日"],"times":{},"rokuyo":"友引"},{"d":15,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":16,"w":"火","tags":["寅の日"],"times":{},"rokuyo":"仏滅"},{"d":19,"w":"金","tags":["己巳の日"],"times":{},"rokuyo":"先勝"},{"d":20,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":21,"w":"日","tags":["満月"],"times":{"満月":"8:23"},"rokuyo":"先負"},{"d":27,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":28,"w":"日","tags":["天赦日","寅の日"],"times":{},"rokuyo":"仏滅"}],"2027-03":[{"d":3,"w":"水","tags":["巳の日"],"times":{},"rokuyo":"先勝"},{"d":4,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":7,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":8,"w":"月","tags":["新月"],"times":{"新月":"18:29"},"rokuyo":"友引"},{"d":12,"w":"金","tags":["一粒万倍日","寅の日"],"times":{},"rokuyo":"赤口"},{"d":15,"w":"月","tags":["巳の日"],"times":{},"rokuyo":"先負"},{"d":19,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":22,"w":"月","tags":["満月"],"times":{"満月":"19:43"},"rokuyo":"仏滅"},{"d":24,"w":"水","tags":["一粒万倍日","寅の日"],"times":{},"rokuyo":"赤口"},{"d":27,"w":"土","tags":["巳の日"],"times":{},"rokuyo":"先負"},{"d":31,"w":"水","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"}],"2027-04":[{"d":5,"w":"月","tags":["寅の日"],"times":{},"rokuyo":"赤口"},{"d":6,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":7,"w":"水","tags":["新月"],"times":{"新月":"8:51"},"rokuyo":"先負"},{"d":8,"w":"木","tags":["巳の日"],"times":{},"rokuyo":"仏滅"},{"d":15,"w":"木","tags":["一粒万倍日","甲子の日"],"times":{},"rokuyo":"大安"},{"d":17,"w":"土","tags":["寅の日"],"times":{},"rokuyo":"先勝"},{"d":18,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":20,"w":"火","tags":["己巳の日"],"times":{},"rokuyo":"仏滅"},{"d":21,"w":"水","tags":["満月"],"times":{"満月":"7:26"},"rokuyo":"大安"},{"d":27,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":29,"w":"木","tags":["天赦日","寅の日"],"times":{},"rokuyo":"先勝"},{"d":30,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"}],"2027-05":[{"d":2,"w":"日","tags":["巳の日"],"times":{},"rokuyo":"仏滅"},{"d":6,"w":"木","tags":["新月"],"times":{"新月":"19:58"},"rokuyo":"仏滅"},{"d":11,"w":"火","tags":["寅の日"],"times":{},"rokuyo":"先負"},{"d":12,"w":"水","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":13,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":14,"w":"金","tags":["巳の日"],"times":{},"rokuyo":"赤口"},{"d":15,"w":"土","tags":["天赦日"],"times":{},"rokuyo":"先勝"},{"d":20,"w":"木","tags":["満月"],"times":{"満月":"19:58"},"rokuyo":"赤口"},{"d":23,"w":"日","tags":["寅の日"],"times":{},"rokuyo":"先負"},{"d":24,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":25,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":26,"w":"水","tags":["巳の日"],"times":{},"rokuyo":"赤口"}],"2027-06":[{"d":4,"w":"金","tags":["寅の日"],"times":{},"rokuyo":"先負"},{"d":5,"w":"土","tags":["一粒万倍日","新月"],"times":{"新月":"4:40"},"rokuyo":"大安"},{"d":7,"w":"月","tags":["一粒万倍日","巳の日"],"times":{},"rokuyo":"先勝"},{"d":8,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":14,"w":"月","tags":["甲子の日"],"times":{},"rokuyo":"友引"},{"d":16,"w":"水","tags":["寅の日"],"times":{},"rokuyo":"仏滅"},{"d":19,"w":"土","tags":["一粒万倍日","己巳の日","満月"],"times":{"満月":"9:44"},"rokuyo":"先勝"},{"d":20,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":28,"w":"月","tags":["寅の日"],"times":{},"rokuyo":"仏滅"}],"2027-07":[{"d":1,"w":"木","tags":["一粒万倍日","巳の日"],"times":{},"rokuyo":"先勝"},{"d":2,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":4,"w":"日","tags":["新月"],"times":{"新月":"12:02"},"rokuyo":"赤口"},{"d":10,"w":"土","tags":["寅の日"],"times":{},"rokuyo":"赤口"},{"d":13,"w":"火","tags":["巳の日"],"times":{},"rokuyo":"先負"},{"d":14,"w":"水","tags":["天赦日","一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":17,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":19,"w":"月","tags":["満月"],"times":{"満月":"0:44"},"rokuyo":"先負"},{"d":22,"w":"木","tags":["寅の日"],"times":{},"rokuyo":"赤口"},{"d":25,"w":"日","tags":["巳の日"],"times":{},"rokuyo":"先負"},{"d":26,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":29,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"}],"2027-08":[{"d":2,"w":"月","tags":["新月"],"times":{"新月":"19:05"},"rokuyo":"先勝"},{"d":3,"w":"火","tags":["寅の日"],"times":{},"rokuyo":"友引"},{"d":6,"w":"金","tags":["巳の日"],"times":{},"rokuyo":"大安"},{"d":7,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"},{"d":8,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":13,"w":"金","tags":["一粒万倍日","甲子の日"],"times":{},"rokuyo":"赤口"},{"d":15,"w":"日","tags":["寅の日"],"times":{},"rokuyo":"友引"},{"d":17,"w":"火","tags":["満月"],"times":{"満月":"16:28"},"rokuyo":"仏滅"},{"d":18,"w":"水","tags":["己巳の日"],"times":{},"rokuyo":"大安"},{"d":20,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":25,"w":"水","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"},{"d":27,"w":"金","tags":["寅の日"],"times":{},"rokuyo":"友引"},{"d":30,"w":"月","tags":["巳の日"],"times":{},"rokuyo":"大安"}],"2027-09":[{"d":1,"w":"水","tags":["一粒万倍日","新月"],"times":{"新月":"2:40"},"rokuyo":"友引"},{"d":6,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":8,"w":"水","tags":["寅の日"],"times":{},"rokuyo":"先負"},{"d":9,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":11,"w":"土","tags":["巳の日"],"times":{},"rokuyo":"赤口"},{"d":14,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":16,"w":"木","tags":["満月"],"times":{"満月":"8:03"},"rokuyo":"大安"},{"d":20,"w":"月","tags":["寅の日"],"times":{},"rokuyo":"先負"},{"d":21,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":23,"w":"木","tags":["巳の日"],"times":{},"rokuyo":"赤口"},{"d":26,"w":"日","tags":["天赦日","一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":30,"w":"木","tags":["新月"],"times":{"新月":"11:36"},"rokuyo":"先負"}],"2027-10":[{"d":2,"w":"土","tags":["寅の日"],"times":{},"rokuyo":"大安"},{"d":3,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"},{"d":5,"w":"火","tags":["巳の日"],"times":{},"rokuyo":"友引"},{"d":9,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"},{"d":12,"w":"火","tags":["甲子の日"],"times":{},"rokuyo":"先負"},{"d":14,"w":"木","tags":["寅の日"],"times":{},"rokuyo":"大安"},{"d":15,"w":"金","tags":["満月"],"times":{"満月":"22:46"},"rokuyo":"赤口"},{"d":17,"w":"日","tags":["己巳の日"],"times":{},"rokuyo":"友引"},{"d":18,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":21,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"},{"d":26,"w":"火","tags":["寅の日"],"times":{},"rokuyo":"大安"},{"d":29,"w":"金","tags":["巳の日","新月"],"times":{"新月":"22:36"},"rokuyo":"仏滅"},{"d":30,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"}],"2027-11":[{"d":2,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":7,"w":"日","tags":["寅の日"],"times":{},"rokuyo":"先勝"},{"d":10,"w":"水","tags":["巳の日"],"times":{},"rokuyo":"仏滅"},{"d":14,"w":"日","tags":["満月"],"times":{"満月":"12:25"},"rokuyo":"友引"},{"d":16,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":17,"w":"水","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":19,"w":"金","tags":["寅の日"],"times":{},"rokuyo":"先勝"},{"d":22,"w":"月","tags":["巳の日"],"times":{},"rokuyo":"仏滅"},{"d":28,"w":"日","tags":["一粒万倍日","新月"],"times":{"新月":"12:24"},"rokuyo":"大安"},{"d":29,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"}],"2027-12":[{"d":1,"w":"水","tags":["寅の日"],"times":{},"rokuyo":"友引"},{"d":4,"w":"土","tags":["巳の日"],"times":{},"rokuyo":"大安"},{"d":11,"w":"土","tags":["天赦日","一粒万倍日","甲子の日"],"times":{},"rokuyo":"赤口"},{"d":13,"w":"月","tags":["寅の日"],"times":{},"rokuyo":"友引"},{"d":14,"w":"火","tags":["一粒万倍日","満月"],"times":{"満月":"1:08"},"rokuyo":"先負"},{"d":16,"w":"木","tags":["己巳の日"],"times":{},"rokuyo":"大安"},{"d":23,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"},{"d":25,"w":"土","tags":["寅の日"],"times":{},"rokuyo":"友引"},{"d":26,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":28,"w":"火","tags":["巳の日","新月"],"times":{"新月":"5:12"},"rokuyo":"赤口"}],"2028-01":[{"d":4,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":6,"w":"木","tags":["寅の日"],"times":{},"rokuyo":"先負"},{"d":7,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":9,"w":"日","tags":["巳の日"],"times":{},"rokuyo":"赤口"},{"d":12,"w":"水","tags":["満月"],"times":{"満月":"13:03"},"rokuyo":"先負"},{"d":16,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":18,"w":"火","tags":["寅の日"],"times":{},"rokuyo":"先負"},{"d":19,"w":"水","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":21,"w":"金","tags":["巳の日"],"times":{},"rokuyo":"赤口"},{"d":27,"w":"木","tags":["新月"],"times":{"新月":"0:12"},"rokuyo":"先勝"},{"d":28,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":30,"w":"日","tags":["寅の日"],"times":{},"rokuyo":"仏滅"},{"d":31,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"}],"2028-02":[{"d":2,"w":"水","tags":["巳の日"],"times":{},"rokuyo":"先勝"},{"d":9,"w":"水","tags":["甲子の日"],"times":{},"rokuyo":"友引"},{"d":10,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":11,"w":"金","tags":["寅の日","満月"],"times":{"満月":"0:03"},"rokuyo":"仏滅"},{"d":14,"w":"月","tags":["己巳の日"],"times":{},"rokuyo":"先勝"},{"d":15,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":22,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":23,"w":"水","tags":["天赦日","寅の日"],"times":{},"rokuyo":"仏滅"},{"d":25,"w":"金","tags":["新月"],"times":{"新月":"19:37"},"rokuyo":"友引"},{"d":26,"w":"土","tags":["巳の日"],"times":{},"rokuyo":"先負"},{"d":27,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"}],"2028-03":[{"d":6,"w":"月","tags":["一粒万倍日","寅の日"],"times":{},"rokuyo":"赤口"},{"d":9,"w":"木","tags":["巳の日"],"times":{},"rokuyo":"先負"},{"d":11,"w":"土","tags":["満月"],"times":{"満月":"10:06"},"rokuyo":"大安"},{"d":13,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":18,"w":"土","tags":["一粒万倍日","寅の日"],"times":{},"rokuyo":"赤口"},{"d":21,"w":"火","tags":["巳の日"],"times":{},"rokuyo":"先負"},{"d":25,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":26,"w":"日","tags":["新月"],"times":{"新月":"13:31"},"rokuyo":"先負"},{"d":30,"w":"木","tags":["一粒万倍日","寅の日"],"times":{},"rokuyo":"先勝"}],"2028-04":[{"d":2,"w":"日","tags":["巳の日"],"times":{},"rokuyo":"仏滅"},{"d":9,"w":"日","tags":["一粒万倍日","甲子の日","満月"],"times":{"満月":"19:26"},"rokuyo":"大安"},{"d":11,"w":"火","tags":["寅の日"],"times":{},"rokuyo":"先勝"},{"d":12,"w":"水","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":14,"w":"金","tags":["己巳の日"],"times":{},"rokuyo":"仏滅"},{"d":21,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":23,"w":"日","tags":["天赦日","寅の日"],"times":{},"rokuyo":"先勝"},{"d":24,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":25,"w":"火","tags":["新月"],"times":{"新月":"4:47"},"rokuyo":"仏滅"},{"d":26,"w":"水","tags":["巳の日"],"times":{},"rokuyo":"大安"}],"2028-05":[{"d":3,"w":"水","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"},{"d":5,"w":"金","tags":["寅の日"],"times":{},"rokuyo":"友引"},{"d":6,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":7,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":8,"w":"月","tags":["巳の日"],"times":{},"rokuyo":"大安"},{"d":9,"w":"火","tags":["天赦日","満月"],"times":{"満月":"4:48"},"rokuyo":"赤口"},{"d":17,"w":"水","tags":["寅の日"],"times":{},"rokuyo":"友引"},{"d":18,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":19,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":20,"w":"土","tags":["巳の日"],"times":{},"rokuyo":"大安"},{"d":24,"w":"水","tags":["新月"],"times":{"新月":"17:16"},"rokuyo":"大安"},{"d":29,"w":"月","tags":["寅の日"],"times":{},"rokuyo":"仏滅"},{"d":30,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":31,"w":"水","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"}],"2028-06":[{"d":1,"w":"木","tags":["巳の日"],"times":{},"rokuyo":"先勝"},{"d":7,"w":"水","tags":["満月"],"times":{"満月":"15:08"},"rokuyo":"先勝"},{"d":8,"w":"木","tags":["甲子の日"],"times":{},"rokuyo":"友引"},{"d":10,"w":"土","tags":["寅の日"],"times":{},"rokuyo":"仏滅"},{"d":13,"w":"火","tags":["一粒万倍日","己巳の日"],"times":{},"rokuyo":"先勝"},{"d":14,"w":"水","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":22,"w":"木","tags":["寅の日"],"times":{},"rokuyo":"仏滅"},{"d":23,"w":"金","tags":["新月"],"times":{"新月":"3:27"},"rokuyo":"赤口"},{"d":25,"w":"日","tags":["一粒万倍日","巳の日"],"times":{},"rokuyo":"友引"},{"d":26,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"}],"2028-07":[{"d":4,"w":"火","tags":["寅の日"],"times":{},"rokuyo":"大安"},{"d":7,"w":"金","tags":["巳の日","満月"],"times":{"満月":"3:10"},"rokuyo":"友引"},{"d":8,"w":"土","tags":["天赦日","一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":11,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"},{"d":16,"w":"日","tags":["寅の日"],"times":{},"rokuyo":"大安"},{"d":19,"w":"水","tags":["巳の日"],"times":{},"rokuyo":"友引"},{"d":20,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":22,"w":"土","tags":["新月"],"times":{"新月":"12:01"},"rokuyo":"赤口"},{"d":23,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":28,"w":"金","tags":["寅の日"],"times":{},"rokuyo":"赤口"},{"d":31,"w":"月","tags":["巳の日"],"times":{},"rokuyo":"先負"}],"2028-08":[{"d":1,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":4,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":5,"w":"土","tags":["満月"],"times":{"満月":"17:09"},"rokuyo":"友引"},{"d":7,"w":"月","tags":["一粒万倍日","甲子の日"],"times":{},"rokuyo":"仏滅"},{"d":9,"w":"水","tags":["寅の日"],"times":{},"rokuyo":"赤口"},{"d":12,"w":"土","tags":["己巳の日"],"times":{},"rokuyo":"先負"},{"d":14,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":19,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":20,"w":"日","tags":["新月"],"times":{"新月":"19:43"},"rokuyo":"先勝"},{"d":21,"w":"月","tags":["寅の日"],"times":{},"rokuyo":"友引"},{"d":24,"w":"木","tags":["巳の日"],"times":{},"rokuyo":"大安"},{"d":26,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":31,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"}],"2028-09":[{"d":2,"w":"土","tags":["寅の日"],"times":{},"rokuyo":"友引"},{"d":4,"w":"月","tags":["満月"],"times":{"満月":"8:47"},"rokuyo":"仏滅"},{"d":5,"w":"火","tags":["巳の日"],"times":{},"rokuyo":"大安"},{"d":8,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":14,"w":"木","tags":["寅の日"],"times":{},"rokuyo":"友引"},{"d":15,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":17,"w":"日","tags":["巳の日"],"times":{},"rokuyo":"大安"},{"d":19,"w":"火","tags":["新月"],"times":{"新月":"3:23"},"rokuyo":"友引"},{"d":20,"w":"水","tags":["天赦日","一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":26,"w":"火","tags":["寅の日"],"times":{},"rokuyo":"先負"},{"d":27,"w":"水","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":29,"w":"金","tags":["巳の日"],"times":{},"rokuyo":"赤口"}],"2028-10":[{"d":2,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":4,"w":"水","tags":["満月"],"times":{"満月":"1:24"},"rokuyo":"大安"},{"d":6,"w":"金","tags":["甲子の日"],"times":{},"rokuyo":"先勝"},{"d":8,"w":"日","tags":["寅の日"],"times":{},"rokuyo":"先負"},{"d":11,"w":"水","tags":["己巳の日"],"times":{},"rokuyo":"赤口"},{"d":12,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":15,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":18,"w":"水","tags":["新月"],"times":{"新月":"11:56"},"rokuyo":"先負"},{"d":20,"w":"金","tags":["寅の日"],"times":{},"rokuyo":"大安"},{"d":23,"w":"月","tags":["巳の日"],"times":{},"rokuyo":"友引"},{"d":24,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":27,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"}],"2028-11":[{"d":1,"w":"水","tags":["寅の日"],"times":{},"rokuyo":"大安"},{"d":2,"w":"木","tags":["満月"],"times":{"満月":"18:17"},"rokuyo":"赤口"},{"d":4,"w":"土","tags":["巳の日"],"times":{},"rokuyo":"友引"},{"d":5,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":10,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":11,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":13,"w":"月","tags":["寅の日"],"times":{},"rokuyo":"大安"},{"d":16,"w":"木","tags":["巳の日","新月"],"times":{"新月":"22:17"},"rokuyo":"仏滅"},{"d":22,"w":"水","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":23,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":25,"w":"土","tags":["寅の日"],"times":{},"rokuyo":"先勝"},{"d":28,"w":"火","tags":["巳の日"],"times":{},"rokuyo":"仏滅"}],"2028-12":[{"d":2,"w":"土","tags":["満月"],"times":{"満月":"10:40"},"rokuyo":"友引"},{"d":4,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":5,"w":"火","tags":["天赦日","一粒万倍日","甲子の日"],"times":{},"rokuyo":"大安"},{"d":7,"w":"木","tags":["寅の日"],"times":{},"rokuyo":"先勝"},{"d":8,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":10,"w":"日","tags":["己巳の日"],"times":{},"rokuyo":"仏滅"},{"d":16,"w":"土","tags":["新月"],"times":{"新月":"11:06"},"rokuyo":"大安"},{"d":17,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"},{"d":19,"w":"火","tags":["寅の日"],"times":{},"rokuyo":"友引"},{"d":20,"w":"水","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":22,"w":"金","tags":["巳の日"],"times":{},"rokuyo":"大安"},{"d":29,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"},{"d":31,"w":"日","tags":["寅の日"],"times":{},"rokuyo":"友引"}],"2029-01":[{"d":1,"w":"月","tags":["一粒万倍日","満月"],"times":{"満月":"1:48"},"rokuyo":"先負"},{"d":3,"w":"水","tags":["巳の日"],"times":{},"rokuyo":"大安"},{"d":10,"w":"水","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"},{"d":12,"w":"金","tags":["寅の日"],"times":{},"rokuyo":"友引"},{"d":13,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":15,"w":"月","tags":["巳の日","新月"],"times":{"新月":"2:24"},"rokuyo":"赤口"},{"d":22,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":24,"w":"水","tags":["寅の日"],"times":{},"rokuyo":"先負"},{"d":25,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":27,"w":"土","tags":["巳の日"],"times":{},"rokuyo":"赤口"},{"d":30,"w":"火","tags":["満月"],"times":{"満月":"15:03"},"rokuyo":"先負"}],"2029-02":[{"d":3,"w":"土","tags":["甲子の日"],"times":{},"rokuyo":"先勝"},{"d":4,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":5,"w":"月","tags":["寅の日"],"times":{},"rokuyo":"先負"},{"d":8,"w":"木","tags":["己巳の日"],"times":{},"rokuyo":"赤口"},{"d":9,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":13,"w":"火","tags":["新月"],"times":{"新月":"19:31"},"rokuyo":"先勝"},{"d":16,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":17,"w":"土","tags":["天赦日","寅の日"],"times":{},"rokuyo":"大安"},{"d":20,"w":"火","tags":["巳の日"],"times":{},"rokuyo":"友引"},{"d":21,"w":"水","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":28,"w":"水","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"}],"2029-03":[{"d":1,"w":"木","tags":["寅の日","満月"],"times":{"満月":"2:10"},"rokuyo":"大安"},{"d":4,"w":"日","tags":["巳の日"],"times":{},"rokuyo":"友引"},{"d":8,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"},{"d":13,"w":"火","tags":["一粒万倍日","寅の日"],"times":{},"rokuyo":"大安"},{"d":15,"w":"木","tags":["新月"],"times":{"新月":"13:19"},"rokuyo":"友引"},{"d":16,"w":"金","tags":["巳の日"],"times":{},"rokuyo":"先負"},{"d":20,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":25,"w":"日","tags":["一粒万倍日","寅の日"],"times":{},"rokuyo":"赤口"},{"d":28,"w":"水","tags":["巳の日"],"times":{},"rokuyo":"先負"},{"d":30,"w":"金","tags":["満月"],"times":{"満月":"11:26"},"rokuyo":"大安"}],"2029-04":[{"d":1,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":4,"w":"水","tags":["一粒万倍日","甲子の日"],"times":{},"rokuyo":"仏滅"},{"d":6,"w":"金","tags":["寅の日"],"times":{},"rokuyo":"赤口"},{"d":7,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":9,"w":"月","tags":["己巳の日"],"times":{},"rokuyo":"先負"},{"d":14,"w":"土","tags":["新月"],"times":{"新月":"6:40"},"rokuyo":"先負"},{"d":16,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":18,"w":"水","tags":["天赦日","寅の日"],"times":{},"rokuyo":"先勝"},{"d":19,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":21,"w":"土","tags":["巳の日"],"times":{},"rokuyo":"仏滅"},{"d":28,"w":"土","tags":["一粒万倍日","満月"],"times":{"満月":"19:36"},"rokuyo":"大安"},{"d":30,"w":"月","tags":["寅の日"],"times":{},"rokuyo":"先勝"}],"2029-05":[{"d":1,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":3,"w":"木","tags":["巳の日"],"times":{},"rokuyo":"仏滅"},{"d":12,"w":"土","tags":["寅の日"],"times":{},"rokuyo":"先勝"},{"d":13,"w":"日","tags":["一粒万倍日","新月"],"times":{"新月":"22:42"},"rokuyo":"仏滅"},{"d":14,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":15,"w":"火","tags":["巳の日"],"times":{},"rokuyo":"赤口"},{"d":24,"w":"木","tags":["寅の日"],"times":{},"rokuyo":"先負"},{"d":25,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":26,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":27,"w":"日","tags":["巳の日"],"times":{},"rokuyo":"赤口"},{"d":28,"w":"月","tags":["満月"],"times":{"満月":"3:37"},"rokuyo":"先勝"}],"2029-06":[{"d":3,"w":"日","tags":["甲子の日"],"times":{},"rokuyo":"先勝"},{"d":5,"w":"火","tags":["寅の日"],"times":{},"rokuyo":"先負"},{"d":8,"w":"金","tags":["一粒万倍日","己巳の日"],"times":{},"rokuyo":"赤口"},{"d":9,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"先勝"},{"d":12,"w":"火","tags":["新月"],"times":{"新月":"12:50"},"rokuyo":"大安"},{"d":17,"w":"日","tags":["寅の日"],"times":{},"rokuyo":"仏滅"},{"d":20,"w":"水","tags":["一粒万倍日","巳の日"],"times":{},"rokuyo":"先勝"},{"d":21,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":26,"w":"火","tags":["満月"],"times":{"満月":"12:22"},"rokuyo":"先勝"},{"d":29,"w":"金","tags":["寅の日"],"times":{},"rokuyo":"仏滅"}],"2029-07":[{"d":2,"w":"月","tags":["一粒万倍日","巳の日"],"times":{},"rokuyo":"先勝"},{"d":3,"w":"火","tags":["天赦日","一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":11,"w":"水","tags":["寅の日"],"times":{},"rokuyo":"仏滅"},{"d":14,"w":"土","tags":["巳の日"],"times":{},"rokuyo":"友引"},{"d":15,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":18,"w":"水","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"},{"d":23,"w":"月","tags":["寅の日"],"times":{},"rokuyo":"大安"},{"d":26,"w":"木","tags":["巳の日"],"times":{},"rokuyo":"友引"},{"d":27,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":30,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"}],"2029-08":[{"d":2,"w":"木","tags":["甲子の日"],"times":{},"rokuyo":"先負"},{"d":4,"w":"土","tags":["寅の日"],"times":{},"rokuyo":"大安"},{"d":7,"w":"火","tags":["己巳の日"],"times":{},"rokuyo":"友引"},{"d":9,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":14,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":16,"w":"木","tags":["寅の日"],"times":{},"rokuyo":"先勝"},{"d":19,"w":"日","tags":["巳の日"],"times":{},"rokuyo":"仏滅"},{"d":21,"w":"火","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"},{"d":26,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":28,"w":"火","tags":["寅の日"],"times":{},"rokuyo":"先勝"},{"d":31,"w":"金","tags":["巳の日"],"times":{},"rokuyo":"仏滅"}],"2029-09":[{"d":2,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"},{"d":9,"w":"日","tags":["寅の日"],"times":{},"rokuyo":"先負"},{"d":10,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":12,"w":"水","tags":["巳の日"],"times":{},"rokuyo":"赤口"},{"d":15,"w":"土","tags":["天赦日","一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":21,"w":"金","tags":["寅の日"],"times":{},"rokuyo":"先負"},{"d":22,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":24,"w":"月","tags":["巳の日"],"times":{},"rokuyo":"赤口"},{"d":27,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"}],"2029-10":[{"d":1,"w":"月","tags":["甲子の日"],"times":{},"rokuyo":"先勝"},{"d":3,"w":"水","tags":["寅の日"],"times":{},"rokuyo":"先負"},{"d":4,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":6,"w":"土","tags":["己巳の日"],"times":{},"rokuyo":"赤口"},{"d":10,"w":"水","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":15,"w":"月","tags":["寅の日"],"times":{},"rokuyo":"仏滅"},{"d":18,"w":"木","tags":["巳の日"],"times":{},"rokuyo":"先勝"},{"d":19,"w":"金","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"},{"d":22,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":27,"w":"土","tags":["寅の日"],"times":{},"rokuyo":"仏滅"},{"d":30,"w":"火","tags":["巳の日"],"times":{},"rokuyo":"先勝"},{"d":31,"w":"水","tags":["一粒万倍日"],"times":{},"rokuyo":"友引"}],"2029-11":[{"d":3,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"大安"},{"d":8,"w":"木","tags":["寅の日"],"times":{},"rokuyo":"赤口"},{"d":11,"w":"日","tags":["巳の日"],"times":{},"rokuyo":"先負"},{"d":17,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":18,"w":"日","tags":["一粒万倍日"],"times":{},"rokuyo":"仏滅"},{"d":20,"w":"火","tags":["寅の日"],"times":{},"rokuyo":"赤口"},{"d":23,"w":"金","tags":["巳の日"],"times":{},"rokuyo":"先負"},{"d":29,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":30,"w":"金","tags":["天赦日","一粒万倍日","甲子の日"],"times":{},"rokuyo":"仏滅"}],"2029-12":[{"d":2,"w":"日","tags":["寅の日"],"times":{},"rokuyo":"赤口"},{"d":5,"w":"水","tags":["己巳の日"],"times":{},"rokuyo":"大安"},{"d":12,"w":"水","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"},{"d":14,"w":"金","tags":["寅の日"],"times":{},"rokuyo":"友引"},{"d":15,"w":"土","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":17,"w":"月","tags":["巳の日"],"times":{},"rokuyo":"大安"},{"d":24,"w":"月","tags":["一粒万倍日"],"times":{},"rokuyo":"赤口"},{"d":26,"w":"水","tags":["寅の日"],"times":{},"rokuyo":"友引"},{"d":27,"w":"木","tags":["一粒万倍日"],"times":{},"rokuyo":"先負"},{"d":29,"w":"土","tags":["巳の日"],"times":{},"rokuyo":"大安"}]};
+const MEANINGS = {"一粒万倍日": "一粒の籾が万倍に実る、という意味の日。「始めること」に向くとされてきました。財布の使い始め、口座を開く、習い事のスタートなどを合わせる人が多い日です。一方で「増える」意味の日なので、借金は避けたほうがいいとも言われます。", "天赦日": "暦の上で最上の吉日とされる日。年に5〜6回しかありません。天がすべてを赦す日、という意味で、何かを始めるならこの日が選ばれることが多いです。", "甲子の日": "十干十二支のいちばん最初の組み合わせ。60日でひと回りする暦のスタート地点です。ここから始めたことは長く続く、と言われてきました。", "寅の日": "寅は「千里を行って千里を帰る」と言われてきた動物。出したものが戻ってくる日とされ、旅立ちや財布の使い始めに選ばれます。", "巳の日": "蛇は弁財天の遣いとされてきました。弁財天は水と音楽、そして財をつかさどるとされる神さまです。", "己巳の日": "巳の日のなかでも60日に一度しか巡ってこない日。弁財天とのご縁がとくに深い日とされています。", "新月": "月が姿を消して、そこからまた満ちていく起点の日。昔から「願いを立てるタイミング」と言われてきました。", "満月": "月が満ちきる日。ここから欠けていくので「手放し」と結びつけられてきました。"};
+const STRONG = ["天赦日","一粒万倍日","甲子の日","己巳の日"];
+const MOON = ["新月","満月"];
+
+function tagHtml(t, times){
+  let cls = "tag";
+  if (STRONG.includes(t)) cls += " strong";
+  if (MOON.includes(t)) cls += " moon";
+  const time = times && times[t] ? `<time>${times[t]}</time>` : "";
+  return `<span class="${cls}">${t}${time}</span>`;
+}
+
+function monthTitle(key){
+  const [y,m] = key.split("-").map(Number);
+  return `${y}年${m}月`;
+}
+
+// 重なりが多い日を拾って、ひとこと添える
+function highlights(rows){
+  const out = [];
+  rows.forEach(r=>{
+    const strong = r.tags.filter(t=>STRONG.includes(t) || MOON.includes(t));
+    if (strong.length >= 2){
+      out.push(`<b>${r.d}日</b>（${r.w}）${strong.join(" と ")}が重なります`);
+    } else if (r.tags.includes("天赦日")){
+      out.push(`<b>${r.d}日</b>（${r.w}）天赦日。年に5〜6回だけの日です`);
+    }
+  });
+  return out;
+}
+
+function render(){
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth()+1, d = now.getDate();
+  const k1 = `${y}-${String(m).padStart(2,"0")}`;
+  const n = new Date(y, m, 1);
+  const k2 = `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}`;
+
+  // 今日の状態
+  const todayRow = (DATA[k1]||[]).find(r=>r.d===d);
+  const wd = "日月火水木金土"[now.getDay()];
+  document.getElementById("today").innerHTML =
+    `<div class="label">きょう</div>
+     <div class="date">${m}月${d}日（${wd}）</div>` +
+    (todayRow
+      ? `<div class="tags">${todayRow.tags.map(t=>tagHtml(t,todayRow.times)).join("")}</div>`
+      : `<div class="none">暦の上では、とくに名前のついた日ではありません。</div>`);
+
+  // 収録期間を過ぎた場合の案内（データは2029年末まで）
+  if(!DATA[k1] && !DATA[k2]){
+    document.getElementById("months").innerHTML =
+      `<h2>${monthTitle(k1)}</h2>
+       <p style="color:var(--sub);font-size:14px">
+       この月のデータはまだ用意できていません。<br>
+       お手数ですが、Instagramのプロフィールからお知らせください。</p>`;
+    document.getElementById("legend").innerHTML =
+      Object.entries(MEANINGS).map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("");
+    return;
+  }
+
+  // 今月と来月
+  let html = "";
+  [k1,k2].forEach(key=>{
+    const rows = DATA[key];
+    if(!rows) return;
+    html += `<h2>${monthTitle(key)}</h2><ul>`;
+    rows.forEach(r=>{
+      const cls = r.w==="土" ? "sat" : (r.w==="日" ? "sun" : "");
+      html += `<li><div class="day ${cls}">${r.d}<small>${r.w}</small></div>
+               <div class="tags">${r.tags.map(t=>tagHtml(t,r.times)).join("")}</div></li>`;
+    });
+    html += `</ul>`;
+    const hl = highlights(rows);
+    if (hl.length) html += `<div class="hl">${hl.join("<br>")}</div>`;
+  });
+  document.getElementById("months").innerHTML = html;
+
+  document.getElementById("legend").innerHTML =
+    Object.entries(MEANINGS).map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("");
+}
+render();
+</script>
+</body>
+</html>

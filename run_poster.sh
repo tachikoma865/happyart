@@ -20,7 +20,22 @@ cd "$(dirname "$0")" || exit 1
 # cron の PATH は極端に短いので、python がありそうな場所を足す
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.pyenv/shims:$PATH"
 
-log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
+# cron は「毎時05分」で回るため、ログが1日あたり24回分たまる。
+# 放っておくと肥大するので、大きくなったら古い分を捨てる。
+LOG_FILE="auto_poster.log"
+MAX_LOG_LINES=3000
+if [ -f "$LOG_FILE" ]; then
+    lines=$(wc -l < "$LOG_FILE" 2>/dev/null || echo 0)
+    if [ "$lines" -gt "$MAX_LOG_LINES" ]; then
+        tail -n 1500 "$LOG_FILE" > "$LOG_FILE.tmp" && mv "$LOG_FILE.tmp" "$LOG_FILE"
+    fi
+fi
+
+# cron はローカル時刻で動くが、投稿予定は日本時間で書かれている。
+# 追跡しやすいよう、ログには両方の時刻を出す。
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S %Z') / JST $(TZ=Asia/Tokyo date '+%m-%d %H:%M')] $*"
+}
 
 # --- python3 を自動検出 ---
 PY=""
