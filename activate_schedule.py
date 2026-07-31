@@ -25,7 +25,12 @@ TIMEOUT = 15
 
 
 def check_url(url):
-    """画像が公開URLとして取得できるか確認する"""
+    """
+    メディアが公開URLとして取得できるか確認する。
+
+    画像だけでなく動画（リール）も扱うため、image/ と video/ の両方を通す。
+    ここを image/ だけにしていると、リールの投稿が必ず失敗する。
+    """
     if not url.startswith(("http://", "https://")):
         return False, "公開URLではありません（ローカルパスは投稿できません）"
     req = urllib.request.Request(url, method="GET", headers={"User-Agent": "happyart-checker"})
@@ -34,8 +39,8 @@ def check_url(url):
             ctype = res.headers.get("Content-Type", "")
             if res.status != 200:
                 return False, f"HTTP {res.status}"
-            if not ctype.startswith("image/"):
-                return False, f"画像ではありません（Content-Type: {ctype}）"
+            if not ctype.startswith(("image/", "video/")):
+                return False, f"画像でも動画でもありません（Content-Type: {ctype}）"
             return True, ctype
     except urllib.error.HTTPError as e:
         hint = "（GitHub Pagesがまだ有効化されていない可能性があります）" if e.code == 404 else ""

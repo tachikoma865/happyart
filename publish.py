@@ -12,9 +12,13 @@
 3の前に必ず2を通すので、画像が無いまま投稿が走って全件 failed になる事故は起きない。
 
 使い方:
-    python3 publish.py            # コミット→push→確認→有効化
-    python3 publish.py --build    # 先に build_august.py で作り直してから実行
-    python3 publish.py --check    # 確認だけ（push も切り替えもしない）
+    python3 publish.py                  # コミット→push→確認→有効化
+    python3 publish.py --build          # 先に build_august.py で作り直してから実行
+    python3 publish.py --check          # 確認だけ（push も切り替えもしない）
+    python3 publish.py --allow-expired  # 予定時刻を過ぎた投稿も有効化する
+
+予定時刻を過ぎた draft は、既定では有効化しない。
+有効化すると次の巡回で即座に投稿され、日付入りの本文と食い違うため。
 """
 
 import csv
@@ -56,8 +60,38 @@ def load_rows():
         return reader.fieldnames, list(reader)
 
 
+def clear_stale_git_lock():
+    """
+    置き去りになった .git/index.lock を片付ける。
+
+    git が途中で止まるとロックが残り、以後すべての git 操作が
+    「Another git process seems to be running」で失敗し続ける。
+    index.lock は本来ごく短時間しか存在しないので、
+    しばらく前のものは残骸とみなして消してよい。
+    """
+    lock = os.path.join(".git", "index.lock")
+    if not os.path.exists(lock):
+        return
+    try:
+        age = time.time() - os.path.getmtime(lock)
+    except OSError:
+        return
+    if age < 120:
+        print("  gitのロックがありますが、まだ新しいので触りません。")
+        print("  他のgit操作が動いていないか確認してください。")
+        return
+    try:
+        os.remove(lock)
+        print(f"  置き去りのgitロックを削除しました（{int(age / 60)}分前のもの）")
+    except OSError as e:
+        print(f"[ERROR] gitロックを削除できませんでした: {e}")
+        print("  手動で消してください: rm -f .git/index.lock")
+        sys.exit(1)
+
+
 def step_push():
     print("■ 変更を GitHub に反映します")
+    clear_stale_git_lock()
 
     status = run(["git", "status", "--porcelain"]).stdout.strip()
     if not status:
@@ -84,10 +118,60 @@ def step_push():
     print()
 
 
-def step_wait_and_check(rows, wait=True):
-    targets = [r for r in rows if r["status"].lower() == "draft"]
+def split_expired(rows):
+    """
+    予定時刻をすでに過ぎている draft を切り分ける。
+
+    期限切れのものをそのまま pending にすると、次の巡回で即座に投稿される。
+    暦の投稿は本文に「今日 7/30（木）は…」と日付が入っているため、
+    過ぎた日の投稿が出ると内容が事実と食い違う。実際に一度これが起きかけた。
+    そこで期限切れは自動では有効化せず、こちらから知らせて判断してもらう。
+    """
+    now = datetime.now(JST).replace(tzinfo=None)
+    fresh, expired = [], []
+    for r in rows:
+        if r["status"].lower() != "draft":
+            continue
+        try:
+            t = datetime.strptime(r["post_time"], "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            fresh.append(r)
+            continue
+        (expired if t <= now else fresh).append(r)
+    return fresh, expired
+
+
+def report_expired(expired):
+    print("■ 予定時刻を過ぎている投稿があります")
+    print("  そのまま有効化すると、次の巡回（毎時05分）ですぐに投稿されます。")
+    print("  暦の投稿は本文に日付が入っているため、内容が合わなくなります。")
+    print()
+    for r in expired:
+        print(f"   ・{r['post_time']}  {r['media_url'].rsplit('/', 1)[-1]}")
+    print()
+    print("  これらは有効化せず draft のままにしました。どうするか選んでください。")
+    print()
+    print("   取りやめる → status を cancelled に変える")
+    print("   日付を変えて出す → build_august.py の date を直して")
+    print("                      python3 publish.py --build を実行する")
+    print("   承知のうえで今すぐ出す → python3 publish.py --allow-expired")
+    print()
+
+
+def step_wait_and_check(rows, wait=True, allow_expired=False):
+    fresh, expired = split_expired(rows)
+
+    if expired and not allow_expired:
+        report_expired(expired)
+        targets = fresh
+    else:
+        targets = fresh + expired
+        if expired:
+            print(f"■ 期限切れ {len(expired)}件も対象に含めます（--allow-expired 指定）")
+            print()
+
     if not targets:
-        print("■ draft の投稿はありません（すでに有効化済みです）")
+        print("■ 有効化できる draft はありません")
         return []
 
     print(f"■ 画像が公開されたか確認します（{len(targets)}件）")
@@ -124,8 +208,11 @@ def step_wait_and_check(rows, wait=True):
 
 
 def step_activate(headers, rows, targets):
+    # 確認が取れた行だけを切り替える。
+    # 「draft を全部」にすると、除外したはずの期限切れまで巻き込んでしまう。
+    keys = {r["media_url"] for r in targets}
     for r in rows:
-        if r["status"].lower() == "draft":
+        if r["status"].lower() == "draft" and r["media_url"] in keys:
             r["status"] = "pending"
 
     with open(CSV_FILE, "w", encoding="utf-8", newline="") as f:
@@ -180,7 +267,8 @@ def main():
         step_push()
 
     headers, rows = load_rows()
-    targets = step_wait_and_check(rows, wait=not check_only)
+    targets = step_wait_and_check(
+        rows, wait=not check_only, allow_expired="--allow-expired" in sys.argv)
 
     if check_only:
         print("■ 確認のみのため、CSVは変更していません")

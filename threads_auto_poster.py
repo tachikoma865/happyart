@@ -39,7 +39,11 @@ GITHUB_PAGES_BASE_URL = "https://tachikoma865.github.io/happyart"
 # Threads 用に追加する列
 THREADS_COLUMNS = ["threads_status", "threads_posted_at", "threads_post_id"]
 
-SSL_CONTEXT = ssl._create_unverified_context()
+# SSL証明書はきちんと検証する。
+# 以前は ssl._create_unverified_context() を使っていたが、それだと
+# 検証されていない通信でアクセストークンを送ることになり、盗聴・なりすましに弱い。
+# 証明書エラーが出る場合は、証明書を無効化するのではなく certifi を入れて解決すること。
+SSL_CONTEXT = ssl.create_default_context()
 JST = timezone(timedelta(hours=9))
 
 
@@ -119,6 +123,48 @@ def wait_for_container(creation_id, token):
             return False, "メディア処理エラー"
         time.sleep(15)
     return False, "タイムアウト（動画処理が長すぎます）"
+
+
+THREADS_LIMIT = 500
+LINE_URL = "https://lin.ee/qIBKNVd"
+
+
+def to_threads_text(caption):
+    """
+    Instagram用のキャプションを Threads 用に整える。
+
+    そのまま投げると3つ問題がある。
+      1. Threadsは500字まで。IGのキャプションは超えるものがある
+      2. IG流のハッシュタグの羅列は Threads では嫌われる
+      3. Threadsは本文にリンクを置けるので「プロフィールから」と書く必要がない
+    """
+    # ハッシュタグだけの行を落とす
+    lines = [l for l in caption.split("\n") if not l.strip().startswith("#")]
+    text = "\n".join(lines).strip()
+
+    # IG向けの言い回しを、リンクを直接置く形に変える
+    text = text.replace(
+        "もっと詳しい読みときは、プロフィールの公式LINEから。\n"
+        "選んだ番号を送ってもらえれば、その色の話が届きます。",
+        f"詳しい読みときはこちらから。番号を送ってください。\n{LINE_URL}")
+    text = text.replace("プロフィールの公式LINE", "公式LINE")
+    text = text.replace("──────────", "").strip()
+
+    if len(text) <= THREADS_LIMIT:
+        return text
+
+    # 長すぎる場合は、末尾（問いかけやリンク）を残して本文側を削る
+    paras = [p for p in text.split("\n\n") if p.strip()]
+    tail = paras[-1]
+    budget = THREADS_LIMIT - len(tail) - 2
+    body = []
+    used = 0
+    for p in paras[:-1]:
+        if used + len(p) + 2 > budget:
+            break
+        body.append(p)
+        used += len(p) + 2
+    return ("\n\n".join(body + [tail])).strip()[:THREADS_LIMIT]
 
 
 def post_to_threads(text, media_url, media_type, config):
@@ -233,14 +279,15 @@ def process(dry_run=False, show_future=False):
             print("-" * 50)
             print(f"[{mark}] {row[0]} / {row[i_time]} / {row[i_type]}")
             print(f"  media: {url or '(テキストのみ)'}")
-            print(f"  text : {row[i_cap][:100]}...")
+            t = to_threads_text(row[i_cap])
+            print(f"  text ({len(t)}字): {t[:120]}...")
             continue
 
         if not due:
             continue
 
         log(f"投稿実行: {row[0]} (予定 {row[i_time]})")
-        ok, result = post_to_threads(row[i_cap], url, row[i_type], config)
+        ok, result = post_to_threads(to_threads_text(row[i_cap]), url, row[i_type], config)
         row[i_status] = "posted" if ok else "failed"
         row[i_at] = now.strftime("%Y-%m-%d %H:%M:%S")
         row[i_id] = result

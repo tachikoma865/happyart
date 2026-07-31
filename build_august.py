@@ -36,6 +36,45 @@ DOC_FILE = "フェーズ1_投稿30日分_2026年8月.md"
 # リポジトリ: https://github.com/tachikoma865/happyart
 MEDIA_BASE = "https://tachikoma865.github.io/happyart/post_images/aug"
 
+# リール（動画）の公開URL。選択占いだけ動画にする。
+# 静止画のフィード投稿はフォロワー0だと配信先が無く、新規リーチはリールがほぼ全部のため。
+REEL_BASE = "https://tachikoma865.github.io/happyart/reels_output/aug"
+REEL_DIR = "reels_output/aug"
+
+
+def media_for(p):
+    """
+    その投稿のメディアURLと種別を返す。
+
+    選択占い（柱1）で動画が用意できていれば REELS、
+    無ければ静止画にそのまま落とす（動画生成前でも壊れないように）。
+    """
+    if p["pillar"] == 1 and os.path.exists(f"{REEL_DIR}/{p['file']}.mp4"):
+        return f"{REEL_BASE}/{p['file']}.mp4", "REELS"
+    return f"{MEDIA_BASE}/{p['file']}.png", "IMAGE"
+
+# 選択占い（柱1）の末尾に付けるLINE導線。
+#
+# フェーズ1の目的は「占い・スピリチュアル属性のリスト獲得」なので、
+# 投稿からLINEへの導線が無いと集客の真ん中が抜けたままになる。
+# ただし全投稿に入れるとしつこいので、主力の選択占いだけに絞る。
+#
+# 表現の注意：効果を約束しない。診断はLINE内で完結させ、商品には触れない。
+LINE_CTA = """
+
+──────────
+もっと詳しい読みときは、プロフィールの公式LINEから。
+選んだ番号を送ってもらえれば、その色の話が届きます。"""
+
+
+def full_caption(p):
+    """本文＋（選択占いならLINE導線）＋ハッシュタグ"""
+    body = p["caption"].strip()
+    if p["pillar"] == 1:
+        body += LINE_CTA
+    return body + "\n\n" + TAGS[p["tag"]]
+
+
 TAGS = {
     "choice": "#選択占い #直感占い #色占い #今日の占い #当たる占い #占い好きな人と繋がりたい #スピリチュアル #開運",
     "koyomi": "#開運日 #一粒万倍日 #暦 #吉日 #開運カレンダー #開運 #スピリチュアル #占い好きな人と繋がりたい",
@@ -105,31 +144,7 @@ PRE_POSTS = [
 
 あなたは何番でしたか？ コメントで教えてください👀""", tag="choice",
     ),
-    dict(
-        date="2026-07-30", kind="REEL", pillar=2, file="pre02_mi",
-        kicker="今日は", title="巳の日", sub="弁財天にゆかりのある日",
-        color="blue",
-        caption="""今日 7/30（木）は巳の日です。
-
-蛇は昔から、弁財天の遣いとされてきました。
-
-弁財天はもともとインドの川の神さまです。
-水が流れる音から、音楽や言葉をつかさどる神さまになりました。
-財の神さまとして語られるようになったのは、そのあとのことです。
-
-だから巳の日は金運の日として知られていますが、
-もとをたどると、言葉を扱う人にもゆかりのある日なんです。
-
-昔からこの日に合わせてきたこと。
-▸ 財布の中を一度ぜんぶ出す
-▸ 弁財天を祀る神社にお参りする
-▸ お金の流れを見直す
-
-7月の巳の日は、今日が最後です。
-次は8月11日（火）。
-
-財布の中、いまどうなっていますか？""", tag="koyomi",
-    ),
+    # 2026-07-30 の巳の日の投稿は、公開が間に合わず日付が過ぎたため取りやめ（7/31 判断）
     dict(
         date="2026-07-31", kind="REEL", pillar=2, file="pre03_ichiryu_taian",
         kicker="7月最後の日", title="一粒万倍日と\n大安が重なります", sub="始めることに向くとされる日",
@@ -910,6 +925,47 @@ POSTS = [
 9月の開運日カレンダーは、明日お届けします。
 今日、何か小さく始めますか？""", tag="koyomi",
     ),
+    dict(
+        date="2026-08-31", kind="CAROUSEL", pillar=2, file="31_sept_calendar",
+        kicker="暦のはなし", title="9月の\n開運日カレンダー", sub="保存して手帳に入れておくと便利です",
+        color="blue",
+        caption="""【保存推奨】9月の開運日カレンダー
+
+お約束していた9月分をお届けします。
+スクショして手帳に入れておくと便利です。
+
+🌾 一粒万倍日
+9/6（日）9/7（月）9/14（月）9/19（土）9/26（土）
+
+⭐ 今月は 9/6 と 9/7 が2日続きます
+「始めること」に向くとされる日が並ぶのは、月に何度もあることではありません。
+
+🌑 新月：9/11（金）12時26分
+願いを書き出すタイミングと言われます。
+
+🌕 満月：9/27（日）1時48分
+手放すタイミングと言われます。
+
+⛩ 大安
+9/4（金）9/10（木）9/14（月）9/20（日）9/26（土）
+
+💰 9/14（月）と 9/26（土）は、一粒万倍日と大安が重なります
+
+🐯 寅の日 9/1・9/13・9/25
+🐍 巳の日 9/4・9/16・9/28
+
+そして、覚えておいてほしい日があります。
+
+9月に天赦日はありません。
+けれど、そのすぐあと。
+10月1日は天赦日と一粒万倍日が重なります。
+2026年に4回しかない組み合わせのひとつです。
+
+大きく始めたいことがある方は、
+9月のうちに準備を整えておくと、ちょうどいいかもしれません。
+
+9月、何を始めますか？""", tag="koyomi",
+    ),
 ]
 
 
@@ -963,8 +1019,9 @@ def build_csv():
         w = csv.writer(f)
         w.writerow(headers)
         for i, p in enumerate(ALL_POSTS, start=1):
-            caption = p["caption"].strip() + "\n\n" + TAGS[p["tag"]]
-            fname = f"{p['file']}.png"
+            caption = full_caption(p)
+            url, mtype = media_for(p)
+            fname = url.rsplit("/", 1)[-1]
             # 既存の状態があれば引き継ぐ。無ければ新規なので draft から始める。
             if fname in existing:
                 status, posted_at, post_id = existing[fname]
@@ -974,8 +1031,8 @@ def build_csv():
             w.writerow([
                 i,
                 f"{p['date']} 21:00:00",
-                f"{MEDIA_BASE}/{fname}",
-                "IMAGE",
+                url,
+                mtype,
                 caption,
                 status,
                 posted_at,
@@ -1011,9 +1068,7 @@ def build_doc():
             f"**画像**：`{IMG_DIR}/{p['file']}.png`",
             "",
             "```",
-            p["caption"].strip(),
-            "",
-            TAGS[p["tag"]],
+            full_caption(p),
             "```",
             "",
         ]
