@@ -128,6 +128,10 @@ def wait_for_container(creation_id, token):
 THREADS_LIMIT = 500
 LINE_URL = "https://lin.ee/qIBKNVd"
 
+# 1回の実行で投稿する最大件数。
+# 溜まった分が一気に連続投稿されるのを防ぐ。Instagram側と同じ考え方。
+MAX_POSTS_PER_RUN = 1
+
 
 def to_threads_text(caption):
     """
@@ -259,6 +263,7 @@ def process(dry_run=False, show_future=False):
     log(f"全 {len(rows)} 件 / Threads 未投稿 {pending} 件")
 
     updated = False
+    posted_this_run = 0
     for row in rows:
         if row[i_status].lower() != "pending":
             continue
@@ -286,6 +291,14 @@ def process(dry_run=False, show_future=False):
         if not due:
             continue
 
+        # 「試行」を数える。成功だけ数えると、通信断のとき全件を試して
+        # すべて failed にしてしまう。
+        if posted_this_run >= MAX_POSTS_PER_RUN:
+            log(f"  {row[0]} は今回は見送り"
+                f"（1回につき{MAX_POSTS_PER_RUN}件まで。次の巡回で投稿されます）")
+            continue
+        posted_this_run += 1
+
         log(f"投稿実行: {row[0]} (予定 {row[i_time]})")
         ok, result = post_to_threads(to_threads_text(row[i_cap]), url, row[i_type], config)
         row[i_status] = "posted" if ok else "failed"
@@ -293,6 +306,13 @@ def process(dry_run=False, show_future=False):
         row[i_id] = result
         log(f"  → {'成功' if ok else '失敗'}: {result}")
         updated = True
+
+        if not ok:
+            # 失敗の原因はトークン切れや通信断のことが多い。
+            # 続けると残り全部を failed にして予定表を壊すので、ここで止める。
+            log("WARN: 投稿に失敗したため、今回の実行はここで終了します。")
+            log("      原因を確認してから threads_status を pending に戻してください。")
+            break
         time.sleep(5)
 
     if updated:
