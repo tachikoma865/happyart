@@ -52,6 +52,22 @@ BGM_DIR = "bgm"
 # 画面の部品
 # ---------------------------------------------------------------
 
+
+def soft_fluid(color, seed, size, blur=0):
+    """
+    背景用のフルイドを作る。
+
+    半分の解像度で生成してから拡大している。どのみち白を重ねたりぼかしたりして
+    背景として沈めるので、見た目はほとんど変わらないのに生成が4倍近く速くなる。
+    リールは1本あたり8場面あるため、ここの速度が全体を左右する。
+    """
+    small = fluid_background(PALETTES[color]["colors"], seed=seed, size=max(2, size // 2))
+    img = small.resize((size, size), Image.LANCZOS)
+    if blur:
+        img = img.filter(ImageFilter.GaussianBlur(blur))
+    return img
+
+
 def canvas():
     return Image.new("RGB", (int(W * OVER), int(H * OVER)), BG)
 
@@ -72,8 +88,7 @@ def scene_text(lines, sub_lines=None, size=96, color=None, seed=3):
     """淡い背景に文字だけ置く場面"""
     img = canvas()
     if color:
-        bg = fluid_background(PALETTES[color]["colors"], seed=seed, size=max(img.size))
-        bg = bg.resize(img.size, Image.LANCZOS).filter(ImageFilter.GaussianBlur(22))
+        bg = soft_fluid(color, seed, max(img.size), blur=22).resize(img.size, Image.LANCZOS)
         img = Image.blend(bg, Image.new("RGB", img.size, (255, 255, 255)), 0.45)
 
     total = len(lines) * size * 1.35 + (len(sub_lines) * 56 * 1.5 if sub_lines else 0)
@@ -126,8 +141,7 @@ def scene_result(key, number, headline, body):
     """1色ぶんの結果を出す場面"""
     p = PALETTES[key]
     img = canvas()
-    bg = fluid_background(p["colors"], seed=200 + number * 29, size=max(img.size))
-    bg = bg.resize(img.size, Image.LANCZOS)
+    bg = soft_fluid(key, 200 + number * 29, max(img.size)).resize(img.size, Image.LANCZOS)
     img = Image.blend(bg, Image.new("RGB", img.size, (255, 255, 255)), 0.30)
 
     cw, ch = img.size
@@ -150,6 +164,48 @@ def scene_result(key, number, headline, body):
 # 場面の定義（台本）
 # ---------------------------------------------------------------
 
+def scene_point(lines, sub_lines=None, color="gold", seed=5, index=None):
+    """
+    情報系リールの1ポイント分。淡い色地に見出しと補足を置く。
+    左上に小さく番号を出して、いま何番目かが分かるようにする。
+    """
+    img = canvas()
+    bg = soft_fluid(color, seed, max(img.size), blur=20).resize(img.size, Image.LANCZOS)
+    img = Image.blend(bg, Image.new("RGB", img.size, (255, 255, 255)), 0.40)
+
+    cw, ch = img.size
+    if index is not None:
+        d = ImageDraw.Draw(img)
+        f = load_font(52, serif=True)
+        d.text((cw * 0.10, ch * 0.16), f"{index}", font=f, fill=GOLD)
+
+    total = len(lines) * 88 * 1.35 + (len(sub_lines) * 52 * 1.5 if sub_lines else 0)
+    y = (ch - total) / 2
+    y = center_text(img, lines, y, 88, fill=PALETTES[color]["ink"])
+    if sub_lines:
+        center_text(img, sub_lines, y + 44, 52, serif=False, fill=(92, 84, 78))
+    return img
+
+
+def build_info_scenes(title, points, color="gold", seed=5, cta=None):
+    """
+    暦・実用テク・色の話などの情報系リールを組み立てる（約13秒）。
+
+    尺を短くしているのは、フォロワーが少ない段階では7〜15秒が
+    もっともループ視聴されやすく、視聴完了率がリーチに直結するため。
+    30秒だと最後まで見られず、フォロワー外に推薦されにくい。
+    """
+    cta = cta or ["保存して使ってください"]
+    scenes = [(2.0, scene_text(title, size=94, color=color, seed=seed))]
+    for i, (head, body) in enumerate(points, start=1):
+        scenes.append((2.8, scene_point(head, body, color=color,
+                                        seed=seed + i * 13, index=i)))
+    scenes.append((2.0, scene_text(cta,
+                                   ["詳しくはプロフィールのLINEから"],
+                                   size=80, color=color, seed=seed + 99)))
+    return scenes
+
+
 DEFAULT_HOOK = ["この投稿が", "流れてきた人へ"]
 DEFAULT_RESULTS = [
     (["外に出るとき"], ["やってみる側に", "倒していい時期"]),
@@ -169,18 +225,20 @@ def build_scenes(hook=None, results=None, seed=11):
     results = results or DEFAULT_RESULTS
     keys = ["gold", "blue", "pink"]
 
+    # 合計およそ15秒。30秒版は最後まで見られず、フォロワー外に推薦されなかった。
+    # 冒頭は短く切って、すぐ3色を見せる。
     scenes = [
-        (3.0, scene_text(hook, size=100)),
-        (3.2, scene_choices(seed=seed, show_numbers=False)),
-        (3.3, scene_choices(seed=seed, show_numbers=True)),
-        (2.5, scene_text(["選びましたか？"], size=104, color="gold", seed=seed + 5)),
+        (1.8, scene_text(hook, size=100)),
+        (2.2, scene_choices(seed=seed, show_numbers=False)),
+        (2.2, scene_choices(seed=seed, show_numbers=True)),
+        (1.3, scene_text(["選びましたか？"], size=104, color="gold", seed=seed + 5)),
     ]
     for i, (head, body) in enumerate(results):
-        scenes.append((5.0, scene_result(keys[i], i + 1, head, body)))
+        scenes.append((2.2, scene_result(keys[i], i + 1, head, body)))
     scenes.append(
-        (3.0, scene_text(["何番でしたか？"],
+        (1.5, scene_text(["何番でしたか？"],
                          ["コメントで教えてください",
-                          "詳しい読みときはプロフィールのLINEから"], size=92)))
+                          "詳しくはプロフィールのLINEから"], size=92)))
     return scenes
 
 
@@ -191,6 +249,26 @@ def make_reel(out, hook=None, results=None, seed=11, fps=20, bgm_index=None):
     os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
 
     scenes = build_scenes(hook, results, seed)
+    bgm = pick_bgm(bgm_index)
+    work = tempfile.mkdtemp()
+    try:
+        cmd = build_ffmpeg_cmd(scenes, work, fps, out, bgm)
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        if r.returncode != 0:
+            raise RuntimeError(r.stderr[-1200:])
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    return out, bgm, sum(d for d, _ in scenes)
+
+
+def make_info_reel(out, title, points, color="gold", seed=5, cta=None,
+                   fps=20, bgm_index=None):
+    """情報系（暦・実用テク・色）のリールを1本書き出す。"""
+    if not shutil.which("ffmpeg"):
+        raise RuntimeError("ffmpeg が見つかりません")
+    os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
+
+    scenes = build_info_scenes(title, points, color=color, seed=seed, cta=cta)
     bgm = pick_bgm(bgm_index)
     work = tempfile.mkdtemp()
     try:
