@@ -147,10 +147,15 @@ def to_threads_text(caption):
     text = "\n".join(lines).strip()
 
     # IG向けの言い回しを、リンクを直接置く形に変える
+    # （旧: 番号を送る形式 / 新: 色の名前を送る形式。どちらの投稿文にも対応する）
     text = text.replace(
         "もっと詳しい読みときは、プロフィールの公式LINEから。\n"
         "選んだ番号を送ってもらえれば、その色の話が届きます。",
         f"詳しい読みときはこちらから。番号を送ってください。\n{LINE_URL}")
+    text = text.replace(
+        "もっと詳しい読みときは、プロフィールの公式LINEから。\n"
+        "選んだ色の名前を送ってもらえれば、その色の話が届きます。",
+        f"詳しい読みときはこちらから。色の名前を送ってください。\n{LINE_URL}")
     text = text.replace("プロフィールの公式LINE", "公式LINE")
     text = text.replace("──────────", "").strip()
 

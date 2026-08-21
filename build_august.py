@@ -66,7 +66,7 @@ LINE_CTA = """
 
 ──────────
 もっと詳しい読みときは、プロフィールの公式LINEから。
-選んだ番号を送ってもらえれば、その色の話が届きます。"""
+選んだ色の名前を送ってもらえれば、その色の話が届きます。"""
 
 
 def full_caption(p):
@@ -685,25 +685,26 @@ POSTS = [
         date="2026-08-21", kind="REEL", pillar=1, file="21_choice", color=None,
         caption="""考えないで選んでください。
 
-1・金／2・青／3・桃
+金・緑・紫
 
 ・
 ・
 ・
 
-【1・金】
-自分で決めたい気持ちが強くなっている時期。
-人に合わせる場面を、ひとつ減らしていい頃です。
+【金】
+動きたい気持ちが強くなっている時期。
+大きなことでなくていい。小さな一歩で十分です。
 
-【2・青】
-静かな時間が足りていません。
-音を消す時間を10分だけ作ってみてください。
+【緑】
+整えたい、という感覚が働いています。
+緑は再生と調和の色。ひとつ手放すと流れが変わります。
 
-【3・桃】
-連絡を待っている状態が続いていませんか。
-こちらから出したほうが早い場面があります。
+【紫】
+考えすぎているのかもしれません。
+紫は昔から直感と結びつけられてきた色。
+直感のほうが先に答えを知っていることがあります。
 
-何番でしたか？ コメントで教えてください。""", tag="choice",
+どの色でしたか？ コメントで教えてください。""", tag="choice",
     ),
     dict(
         date="2026-08-22", kind="CAROUSEL", pillar=3, file="22_nemuru",
@@ -762,23 +763,26 @@ POSTS = [
         caption="""8月も残り1週間です。
 直感で1色選んでください。
 
-1・金／2・青／3・桃
+茜・青・緑
 
 ・
 ・
 ・
 
-【1・金】
+【茜】
+夕焼けの色。区切りの色とされてきました。
 やり残したことより、やれたことを数えるほうが向いている時期。
 
-【2・青】
-9月に向けて、いま整理しておくと楽になるものがあります。
+【青】
+9月の前に、余白をつくりたい時期。
+予定をひとつ減らすと、月の変わり目が楽になります。
 
-【3・桃】
-夏のあいだ会えなかった人のことが浮かんでいませんか。
+【緑】
+整理の時期。片づけをひとつだけ。
+9月のあなたが助かります。
 
 今週末 8/28 は満月です。
-何番でしたか？ コメントで教えてください。""", tag="choice",
+どの色でしたか？ コメントで教えてください。""", tag="choice",
     ),
     dict(
         date="2026-08-25", kind="REEL", pillar=2, file="25_ichiryu2",
@@ -835,23 +839,26 @@ POSTS = [
         caption="""明日は満月です。
 その前に、直感で1色選んでください。
 
-1・金／2・青／3・桃
+紫・桃・茜
 
 ・
 ・
 ・
 
-【1・金】
-手放すより、続けるものを決めるほうが向いています。
+【紫】
+手放すものを、頭ではなく直感で選んでみてください。
+紫は昔から内省の色とされてきました。
 
-【2・青】
-ものより、予定を手放すほうが効きそうです。
+【桃】
+気になっている人がいませんか。
+満月の前に、連絡してみるのもいいタイミングです。
 
-【3・桃】
-気を遣う相手との距離を、少しだけ変えてもいい時期。
+【茜】
+夕焼けのように、きれいに終わらせたいことがある時期。
+締めくくりに向いています。
 
 明日 8/28 の満月は、手放しのタイミングと言われます。
-何番でしたか？ コメントで教えてください。""", tag="choice",
+どの色でしたか？ コメントで教えてください。""", tag="choice",
     ),
     dict(
         date="2026-08-28", kind="REEL", pillar=2, file="28_mangetsu",
@@ -994,52 +1001,70 @@ def build_images():
 
 def load_existing_state():
     """
-    既存CSVの status / posted_at / 投稿ID を、画像ファイル名をキーに読み込む。
+    既存CSVの全列を、メディアファイル名をキーに読み込む。
 
     これをやらないと、作り直すたびに全行が draft に戻ってしまい、
     投稿済み（posted）の記録まで消えて同じ投稿が二重に出てしまう。
-    IDは並び順で変わるので、キーには安定している画像ファイル名を使う。
+
+    ★行ごと（タプル）ではなく全列の辞書で持つのが重要。
+      以前は status / posted_at / instagram_post_id の3列だけ引き継いでいたため、
+      threads_auto_poster.py が追加した threads_* 列が再生成のたびに消えていた。
+      列が消えると Threads 側は全行を「未投稿」とみなし、過去日付の投稿を
+      再投稿し始める（8/7 と 8/21 に実際に起きた事故）。
     """
     if not os.path.exists(CSV_FILE):
-        return {}
+        return {}, []
     state = {}
     with open(CSV_FILE, encoding="utf-8") as f:
-        for row in csv.DictReader(f):
+        reader = csv.DictReader(f)
+        extra_cols = [c for c in reader.fieldnames
+                      if c not in ("id", "post_time", "media_url", "media_type",
+                                   "caption", "status", "posted_at", "instagram_post_id")]
+        for row in reader:
             key = row["media_url"].rsplit("/", 1)[-1]
-            state[key] = (row["status"], row["posted_at"], row["instagram_post_id"])
-    return state
+            state[key] = dict(row)
+    return state, extra_cols
 
 
 def build_csv():
     print("[2/3] posts_schedule.csv を生成中...")
-    existing = load_existing_state()
+    existing, extra_cols = load_existing_state()
 
+    # 基本の8列＋既存CSVにあった追加列（threads_* など）をすべて残す
     headers = ["id", "post_time", "media_url", "media_type", "caption",
-               "status", "posted_at", "instagram_post_id"]
+               "status", "posted_at", "instagram_post_id"] + extra_cols
     kept = 0
     with open(CSV_FILE, "w", encoding="utf-8", newline="") as f:
-        w = csv.writer(f)
-        w.writerow(headers)
+        w = csv.DictWriter(f, fieldnames=headers)
+        w.writeheader()
         for i, p in enumerate(ALL_POSTS, start=1):
-            caption = full_caption(p)
             url, mtype = media_for(p)
             fname = url.rsplit("/", 1)[-1]
-            # 既存の状態があれば引き継ぐ。無ければ新規なので draft から始める。
-            if fname in existing:
-                status, posted_at, post_id = existing[fname]
+            prev = existing.get(fname)
+            if prev is None:
+                stem = fname.rsplit(".", 1)[0]
+                for k, v in existing.items():
+                    if k.rsplit(".", 1)[0] == stem:
+                        prev = v
+                        break
+            row = {
+                "id": i,
+                "post_time": f"{p['date']} 21:00:00",
+                "media_url": url,
+                "media_type": mtype,
+                "caption": full_caption(p),
+                "status": "draft", "posted_at": "", "instagram_post_id": "",
+            }
+            for c in extra_cols:
+                row[c] = ""
+            if prev is not None:
                 kept += 1
-            else:
-                status, posted_at, post_id = "draft", "", ""
-            w.writerow([
-                i,
-                f"{p['date']} 21:00:00",
-                url,
-                mtype,
-                caption,
-                status,
-                posted_at,
-                post_id,
-            ])
+                row["status"] = prev.get("status", "draft")
+                row["posted_at"] = prev.get("posted_at", "")
+                row["instagram_post_id"] = prev.get("instagram_post_id", "")
+                for c in extra_cols:
+                    row[c] = prev.get(c, "")
+            w.writerow(row)
     new_count = len(ALL_POSTS) - kept
     print(f"      → {CSV_FILE}（既存 {kept}件は状態を維持 / 新規 {new_count}件は draft）")
 

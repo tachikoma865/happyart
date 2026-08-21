@@ -99,8 +99,8 @@ def scene_text(lines, sub_lines=None, size=96, color=None, seed=3):
     return img
 
 
-def scene_choices(seed=11, show_numbers=True):
-    """3色を横に並べて選ばせる場面"""
+def scene_choices(trio=("gold", "blue", "pink"), seed=11, show_numbers=True):
+    """3色を横に並べて選ばせる場面。トリオは投稿ごとに組み替える"""
     img = canvas()
     cw, ch = img.size
 
@@ -117,7 +117,7 @@ def scene_choices(seed=11, show_numbers=True):
     ph = 640
 
     d = ImageDraw.Draw(img)
-    for i, key in enumerate(["gold", "blue", "pink"]):
+    for i, key in enumerate(trio):
         p = PALETTES[key]
         tile = fluid_background(p["colors"], seed=seed + i * 17, size=pw)
         tile = tile.resize((pw, ph), Image.LANCZOS)
@@ -126,19 +126,17 @@ def scene_choices(seed=11, show_numbers=True):
         d.rectangle([x, top, x + pw, top + ph], outline=(228, 220, 208), width=2)
 
         if show_numbers:
-            f = load_font(88, serif=True)
-            bbox = d.textbbox((0, 0), str(i + 1), font=f)
-            d.text((x + pw / 2 - (bbox[2] - bbox[0]) / 2, top + ph + 26),
-                   str(i + 1), font=f, fill=INK)
-            f2 = load_font(46, serif=True)
-            bbox = d.textbbox((0, 0), p["label"], font=f2)
-            d.text((x + pw / 2 - (bbox[2] - bbox[0]) / 2, top + ph + 132),
-                   p["label"], font=f2, fill=SUB)
+            # 以前は番号（1・2・3）を出していたが、色名に変更した。
+            # 投稿ごとにトリオが変わるため、番号だとLINEの診断と対応が取れなくなる。
+            f = load_font(84, serif=True)
+            bbox = d.textbbox((0, 0), p["label"], font=f)
+            d.text((x + pw / 2 - (bbox[2] - bbox[0]) / 2, top + ph + 40),
+                   p["label"], font=f, fill=INK)
     return img
 
 
 def scene_result(key, number, headline, body):
-    """1色ぶんの結果を出す場面"""
+    """1色ぶんの結果を出す場面（number は模様のseed用に残している）"""
     p = PALETTES[key]
     img = canvas()
     bg = soft_fluid(key, 200 + number * 29, max(img.size)).resize(img.size, Image.LANCZOS)
@@ -149,7 +147,7 @@ def scene_result(key, number, headline, body):
 
     # 上部に番号と色名
     f = load_font(150, serif=True)
-    label = f"{number}・{p['label']}"
+    label = p["label"]
     bbox = d.textbbox((0, 0), label, font=f)
     d.text(((cw - (bbox[2] - bbox[0])) / 2 - bbox[0], ch * 0.16), label,
            font=f, fill=p["ink"])
@@ -214,41 +212,42 @@ DEFAULT_RESULTS = [
 ]
 
 
-def build_scenes(hook=None, results=None, seed=11):
+def build_scenes(hook=None, results=None, seed=11, trio=None):
     """
     台本から場面を組み立てる。
 
-    hook    : 冒頭3秒に出す1〜2行
-    results : 金・青・桃それぞれの (見出し行, 補足行) を3つ
+    hook    : 冒頭に出す1〜2行
+    results : トリオの各色に対応する (見出し行, 補足行) を3つ（trioと同じ順）
+    trio    : 使う3色。毎回組み替えて、同じ色パターンの連続を避ける
     """
     hook = hook or DEFAULT_HOOK
     results = results or DEFAULT_RESULTS
-    keys = ["gold", "blue", "pink"]
+    keys = list(trio) if trio else ["gold", "blue", "pink"]
 
     # 合計およそ15秒。30秒版は最後まで見られず、フォロワー外に推薦されなかった。
     # 冒頭は短く切って、すぐ3色を見せる。
     scenes = [
         (1.8, scene_text(hook, size=100)),
-        (2.2, scene_choices(seed=seed, show_numbers=False)),
-        (2.2, scene_choices(seed=seed, show_numbers=True)),
-        (1.3, scene_text(["選びましたか？"], size=104, color="gold", seed=seed + 5)),
+        (2.2, scene_choices(trio=keys, seed=seed, show_numbers=False)),
+        (2.2, scene_choices(trio=keys, seed=seed, show_numbers=True)),
+        (1.3, scene_text(["選びましたか？"], size=104, color=keys[0], seed=seed + 5)),
     ]
     for i, (head, body) in enumerate(results):
         scenes.append((2.2, scene_result(keys[i], i + 1, head, body)))
     scenes.append(
-        (1.5, scene_text(["何番でしたか？"],
+        (1.5, scene_text(["どの色でしたか？"],
                          ["コメントで教えてください",
                           "詳しくはプロフィールのLINEから"], size=92)))
     return scenes
 
 
-def make_reel(out, hook=None, results=None, seed=11, fps=20, bgm_index=None):
+def make_reel(out, hook=None, results=None, seed=11, fps=20, bgm_index=None, trio=None):
     """1本ぶんのリールを書き出す。他のスクリプトから呼ぶ用。"""
     if not shutil.which("ffmpeg"):
         raise RuntimeError("ffmpeg が見つかりません")
     os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
 
-    scenes = build_scenes(hook, results, seed)
+    scenes = build_scenes(hook, results, seed, trio=trio)
     bgm = pick_bgm(bgm_index)
     work = tempfile.mkdtemp()
     try:

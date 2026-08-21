@@ -76,23 +76,28 @@ REEL_TEXTS = {
          (["選べない"], ["条件を1つ捨てると", "急に決まる"]),
          (["人の意見が気になる"], ["相談相手を", "1人に絞って"])],
     ),
+    # ↓ ここから色のトリオを毎回組み替える（同じ「金・青・桃」の連続をやめた）。
+    #   3要素目がトリオ。resultsはトリオと同じ順で対応させること。
     "21_choice": (
         ["考えないで", "選んでください"],
-        [(["自分で決めたい"], ["人に合わせる場面を", "ひとつ減らす"]),
-         (["静けさが足りない"], ["音を消す時間を", "10分だけ"]),
-         (["待っている"], ["こちらから出すほうが", "たぶん早い"])],
+        [(["動きたいとき"], ["小さな一歩で", "十分です"]),
+         (["整えたいとき"], ["ひとつ手放すと", "流れが変わる"]),
+         (["考えたいとき"], ["直感のほうが先に", "答えを知っている"])],
+        ("gold", "green", "purple"),
     ),
     "24_choice": (
         ["8月も", "残り1週間"],
-        [(["数えるなら"], ["やり残しより", "やれたことを"]),
-         (["整理するとき"], ["9月が楽になる", "片づけをひとつ"]),
-         (["会えなかった人"], ["顔が浮かんだなら", "それがきっかけ"])],
+        [(["区切りのとき"], ["やれたことを", "数えてみて"]),
+         (["休むとき"], ["9月の前に", "余白をつくる"]),
+         (["整理のとき"], ["片づけをひとつ", "9月が楽になる"])],
+        ("akane", "blue", "green"),
     ),
     "27_choice": (
         ["明日は", "満月です"],
-        [(["続けるものを"], ["手放すより", "決めるほうが向く"]),
-         (["予定を手放す"], ["ものより先に", "減らすのは予定"]),
-         (["距離を変える"], ["気を遣う相手と", "少しだけ"])],
+        [(["見直すとき"], ["手放すものを", "直感で選んで"]),
+         (["人と話すとき"], ["気になる人に", "連絡してみて"]),
+         (["締めくくるとき"], ["夕焼けのように", "きれいに終える"])],
+        ("purple", "pink", "akane"),
     ),
 }
 
@@ -228,6 +233,7 @@ INFO_SCRIPTS = {
 
 def main():
     force = "--force" in sys.argv
+    only = [a for a in sys.argv[1:] if not a.startswith("--")]
     os.makedirs(OUT_DIR, exist_ok=True)
 
     items = [(k, "choice", v) for k, v in REEL_TEXTS.items()]
@@ -237,8 +243,10 @@ def main():
 
     made = 0
     for i, (name, kind, data) in enumerate(items):
+        if only and name not in only:
+            continue
         out = f"{OUT_DIR}/{name}.mp4"
-        if is_valid(out) and not force:
+        if is_valid(out) and not (force or only):
             print(f"  [skip] {name}.mp4（作成済み・検証OK）")
             continue
 
@@ -247,9 +255,10 @@ def main():
         try:
             # seed と BGM を1本ずつずらして、模様と曲が毎回変わるようにする
             if kind == "choice":
-                hook, results = data
+                hook, results = data[0], data[1]
+                trio = data[2] if len(data) > 2 else None
                 _, bgm, sec = make_reel(out, hook=hook, results=results,
-                                        seed=11 + i * 23, bgm_index=i)
+                                        seed=11 + i * 23, bgm_index=i, trio=trio)
             else:
                 title, points, color, cta = data
                 _, bgm, sec = make_info_reel(out, title, points, color=color,
