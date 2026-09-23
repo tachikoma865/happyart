@@ -156,6 +156,10 @@ def to_threads_text(caption):
         "もっと詳しい読みときは、プロフィールの公式LINEから。\n"
         "選んだ色の名前を送ってもらえれば、その色の話が届きます。",
         f"詳しい読みときはこちらから。色の名前を送ってください。\n{LINE_URL}")
+    text = text.replace(
+        "もっと詳しい色の読みときは、プロフィールの公式LINEで。\n"
+        "無料で受け取れます。",
+        f"詳しい色の読みときは、こちらから無料で。\n{LINE_URL}")
     text = text.replace("プロフィールの公式LINE", "公式LINE")
     text = text.replace("──────────", "").strip()
 

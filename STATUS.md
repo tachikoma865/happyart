@@ -2,11 +2,11 @@
 project: happyart
 title: happyart / Glintria（運気アート × Instagram自動投稿）
 phase: フェーズ1（スピリチュアル属性の集客・1000フォロワーまで）
-health: 注意（原因特定済み・publish.py の実行待ち）
-updated: 2026-08-21
+health: 要対応（9月分30件が draft のまま＝9/1〜9/22 と22日連続サイレント欠落。cron は毎時正常稼働中だが publish.py 依然未実行。Threads/IG トークン失効=9月下旬が目前）
+updated: 2026-09-22
 priority: 2
-next_action: "**`python3 publish.py` は昨日の期限（8/20 21:00 JST）までに実行されなかった。** 結果は予測どおり: 8/20 21:05 の id22（寅の日・20_tora2.mp4）は Threads がメディア処理エラーで failed（計16件目）、IG は draft のまま＝8/20 も投稿ゼロ。原因は確定済み（リール24本が GitHub Pages に無い＝404）なので、**今日 21:00 JST までに `python3 publish.py` を1回実行する。それだけで直る**。今日 8/21 の id23（選択占い・21_choice.mp4）はコミット済みの choice 系なので publish.py 無しでも Threads は出る見込みだが、draft 滞留（IG 9件）は実行しない限り解消しない"
-next_due: 2026-08-21
+next_action: "**🔴 サイレント欠落は 9/1〜9/22 の22日連続に拡大**。auto_poster.log は JST 9/23 04:05 の回まで毎時正常終了（cron は健全・『全 63 件 / Threads 未投稿 0 件』『いま投稿すべき pending はありませんでした』）だが pending 0 のまま素通り＝**`publish.py` が依然未実行**。CSV は IG posted 17 / cancelled 16 / draft 30 で 9/1 から1件も変化なし。**今日いちばんに `python3 publish.py` を1回回す**（1コマンドでコミット→push→公開確認→pending化。過去日分は既定で有効化されない＝破棄し、今日以降分だけ流す割り切りを推奨）。人間側の残タスクは ①LINE設定 ②**Threads/IG トークン再発行（失効=9月下旬が目前。publish.py で再開しても再発行しないと月末にまた止まる）**"
+next_due: 2026-09-22
 ---
 
 ## 会議の結論（2026-07-31）— 30日でLINE登録30件
@@ -46,8 +46,8 @@ next_due: 2026-08-21
 | 優先 | タスク | 状態 | 期限 | メモ |
 |---|---|---|---|---|
 | A | ~~【緊急】Threads の再投稿を止める~~ → **公開済み3件を消すか決める** | 収束・判断待ち | 2026-08-08 | 再投稿は**自然に止まった**（下記「稼働状況」）。ただし **id1（はじめまして・JST 8/7 03:05）／id2（7/31 一粒万倍日・04:05）／id3（選択占い・05:05）の3件は実際に Threads へ公開済み**。日付入り本文が過去日のまま出ている id2 だけでも消すかどうかの判断が要る |
-| A | **Threads の「メディア処理エラー」（VIDEO/REELS）** | **恒常化（計15件 failed。8/19 の id21〈桃色・色の意味系〉も failed）** | 2026-08-20 | id15（8/13 21:05）・id16（8/14 21:05）とも `メディア処理エラー` で failed。8/12 の id14 が成功したので間欠と見ていたが、2日続いたので**静止画（IMAGE）へのフォールバックを実装する判断どき**。**failed は計11件**（id4〜13・15・16）で自動再試行されない（出し直すなら `threads_status` を pending に戻す。ただし日付入り本文は過去日のままなので基本は捨てる判断でよい）。今日 8/15 の id17 も REELS なので同じ経路で落ちる公算が大きい |
-| A | **IG の draft を pending にする（`python3 publish.py`）** | 要対応・**8日以上未実施** | 2026-08-20 | 8/15 時点の内訳は IG: draft 17 / pending 4 / cancelled 7 / posted 5（3日間 変化なし）。pending は選択占い（id18・21・26・29）だけで、**暦・実用テク系がすべて draft = cron が黙って何もしない**。**今日 8/15 の id17（お盆）も IG は draft**。回さないと IG は 8/16 の id18 まで無投稿が続く。cron ログ自体は毎時「正常終了」を返すので**失敗として目に入らないのが厄介**——`publish.py` を cron 側に組み込むか、draft 残数を通知させる仕組みを検討したい |
+| A | **Threads の「メディア処理エラー」（VIDEO/REELS）** | **✅ 解消見込み（8/21 のメディアpush後、id23 が成功。今夜の id24 で確定）** | 2026-08-20 | id15（8/13 21:05）・id16（8/14 21:05）とも `メディア処理エラー` で failed。8/12 の id14 が成功したので間欠と見ていたが、2日続いたので**静止画（IMAGE）へのフォールバックを実装する判断どき**。**failed は計11件**（id4〜13・15・16）で自動再試行されない（出し直すなら `threads_status` を pending に戻す。ただし日付入り本文は過去日のままなので基本は捨てる判断でよい）。今日 8/15 の id17 も REELS なので同じ経路で落ちる公算が大きい |
+| A | **IG の draft を pending にする（`python3 publish.py`）** | **✅ 完了（8/21）。draft 0件・id24〜33 は全部 pending** | 2026-08-20 | 8/15 時点の内訳は IG: draft 17 / pending 4 / cancelled 7 / posted 5（3日間 変化なし）。pending は選択占い（id18・21・26・29）だけで、**暦・実用テク系がすべて draft = cron が黙って何もしない**。**今日 8/15 の id17（お盆）も IG は draft**。回さないと IG は 8/16 の id18 まで無投稿が続く。cron ログ自体は毎時「正常終了」を返すので**失敗として目に入らないのが厄介**——`publish.py` を cron 側に組み込むか、draft 残数を通知させる仕組みを検討したい |
 | — | ~~Instagram の failed 2件（8/3・8/4）の再投稿要否を決める~~ | 消滅（要確認） | 2026-08-06 | 8/6 の CSV 作り直しで failed 行ごと消えた。現在 failed は0件。再投稿するかどうかの判断機会も一緒に消えているので、8/3・8/4 分を出すなら別途手当てが要る |
 | A | フェーズ1の投稿を作り直す（30日分） | ✅ 完了かも（8/6 リール化） | 2026-07-28 | 柱は ①選択占い（主力・週2）②暦・開運日（週2）③開運の実用テク（週2）④色・数字の意味（週1）。表現ルールは v5 を厳守 |
 | — | ~~旧 `posts_schedule.csv` と `mass_generate_images.py` を破棄~~ | ✅ 完了(7/26) | — | 投稿実績2件は `posted_log.md` に退避済み |
@@ -147,7 +147,112 @@ Threads も同時に投稿する場合は末尾を `run_poster.sh --threads` に
 - `reschedule_pending.py` — 溜まった pending の日時を振り直す
 - `THREADS_セットアップ手引き.md` — Threads トークン取得手順
 
-## 稼働状況（2026-08-21 04:10 JST 時点・ログ確認済み）
+## 稼働状況（2026-09-17 朝ブリーフ時点 ログ確認済み）
+
+**🔴 サイレント欠落は 9/1〜9/17 の17日連続に拡大。cron は健全・データ側が止まったままの構図は不変。**
+
+- 🔴 auto_poster.log は JST 9/17 23:05 の回まで毎時「全63件 / 保留中(pending): 0件」「Threads 未投稿 0 件」で正常終了を継続＝**`publish.py` は依然未実行**
+- 🔴 CSV: IG posted 17 / cancelled 16 / **draft 30**、TH posted 17 / failed 15 / cancelled 1 / 未設定30——9/1 から1件も変化なし（今回スクリプトで再集計して確認）
+- ⚠️ **Threads/IG トークンの失効（9月下旬）がさらに接近**。publish.py で再開しても再発行しないと月末にまた止まる
+- 対処は不変: **`python3 publish.py` を1回回す**（過去日分は既定で有効化されない＝破棄し、今日以降分だけ流す割り切りを推奨）
+
+### （9/16 朝ブリーフ時点の記録）
+
+**🔴 サイレント欠落は 9/1〜9/16 の16日連続に拡大。cron は健全・データ側が止まったままの構図は不変。**
+
+- 🔴 auto_poster.log は JST 9/17 01:05 の回まで毎時「全63件 / pending 0件」「Threads 未投稿 0件」で正常終了を継続（9/16 21:12 の回も同様）＝**`publish.py` は依然未実行**。9/16 21:05 の枠も pending 0 で素通り
+- ⚠️ **Threads/IG トークンの失効（9月下旬）がさらに接近**。publish.py で再開しても再発行しないと月末にまた止まる
+- 対処は不変: **`python3 publish.py` を1回回す**（過去日 9/1〜9/15 分は既定で有効化されない＝破棄し、今日以降分だけ流す割り切りを推奨）
+
+### （9/15 朝ブリーフ時点の記録）
+
+**🔴 サイレント欠落は 9/1〜9/15 の15日連続に拡大。cron は健全・データ側が止まったままの構図は不変。**
+
+- 🔴 auto_poster.log は JST 9/15 20:05 の回（PDT 9/15 04:05）まで毎時「全63件 / pending 0件」で正常終了を継続
+- 🔴 CSV: IG posted 17 / cancelled 16 / **draft 30**、TH posted 17 / failed 15 / cancelled 1 / 未設定30——**9/1 から1件も変化なし＝`publish.py` は依然未実行**（今回スクリプトで再集計して確認）
+- 🔴 git 最終コミットは 8/21 18:44 JST のまま＝9月分メディアは GitHub Pages に未公開
+- ⚠️ **Threads/IG トークンの失効（9月下旬）が接近中**
+
+### （9/14 21時 PDT／JST 9/15 13時 時点の記録）
+
+**🔴 サイレント欠落は 9/1〜9/14 の14日連続に拡大。cron は動いているのに publish.py が3日経っても実行されていない。**
+
+- 🔴 auto_poster.log は JST 9/15 00:05 の回まで毎時「全63件 / pending 0件」で正常終了を継続（9/13〜14 はほぼ連続稼働。JST 9/15 01:05〜12:05 の時間帯は Mac 停止で記録なし）＝**cron は健全・壊れているのはデータ側**という構図は 9/1 から不変
+- 🔴 CSV: IG posted 17 / cancelled 16 / **draft 30（id34〜63 全部）**、TH posted 17 / failed 15 / cancelled 1 / 未設定30——**9/1 から1件も変化なし＝`publish.py` は依然未実行**
+- 🔴 git 最終コミットは 8/21 18:44 JST のまま＝9月分メディア（reels_output/sep/ の mp4 30本）は GitHub Pages に未公開
+- ⚠️ **Threads/IG トークンの失効（取得から60日＝9月下旬）が接近中**。publish.py を回して再開しても、再発行しないと月末にまた止まる
+
+### （9/11 17時 時点の記録）
+
+**🔴 サイレント欠落10日＋Mac 停止で cron も2日間止まっていた。**
+
+- 🔴 auto_poster.log の最終記録は **JST 9/9 05:05 の回（正常終了・pending 0件）**。以後 9/11 17時まで記録なし＝Mac が起動しておらず cron 自体が動いていなかった（note_1・Amazonアフィリエイトの自動処理も同時刻帯で停止→9/11 17時に復帰確認）
+- CSV: IG posted 17 / cancelled 16 / **draft 30（id34〜63 全部）**、TH posted 17 / failed 15 / cancelled 1 / 未設定30——**9/1 から1件も変化なし＝`publish.py` は依然未実行**
+- git 最終コミットは 8/21 18:44 JST のまま＝9月分メディア（reels_output/sep/ の mp4 30本）は GitHub Pages に未公開
+- 過去日になった id34〜43（9/1〜9/10）は既定の `publish.py` では有効化されない。欠落10日のため過去日分は破棄し、今日以降分だけ流すのが現実的
+
+### （9/4 時点の記録）
+
+**🔴 サイレント欠落4日目。9/1〜9/4 の4日間、IG・Threads とも投稿ゼロ。**
+
+- 🔴 auto_poster.log は JST 9/5 04:05 の回まで毎時「全63件 / pending 0件」「Threads 未投稿 0件」で正常終了し続けている（終了コード0）＝失敗として表に出ないまま素通りが継続
+- CSV: IG posted 17 / cancelled 16 / **draft 30（id34〜63 全部）**、TH posted 17 / failed 15 / cancelled 1 / 未設定30——**9/1 の集計から1件も変化なし＝`publish.py` は依然未実行**
+- git 最終コミットは 8/21 18:44 JST のまま＝9月分メディア（reels_output/sep/ の mp4 30本）は GitHub Pages に未公開
+- 過去日になった id34〜37 は既定の `publish.py` では有効化されない（日付入り本文のため）。内容確認のうえ扱いを決める
+
+### （9/3 時点の記録）
+
+**🔴 サイレント欠落3日目。9/1〜9/3 の3日間、IG・Threads とも投稿ゼロ。**
+
+- 🔴 auto_poster.log は JST 9/4 04:05 の回まで毎時「全63件 / pending 0件」「Threads 未投稿 0件」で正常終了し続けている（終了コード0）＝失敗として表に出ないまま素通りが継続
+- CSV: IG posted 17 / cancelled 16 / **draft 30（id34〜63 全部）**、TH posted 17 / failed 15 / 未設定30——**9/1 の集計から1件も変化なし＝`publish.py` は依然未実行**
+- git 最終コミットは 8/21 18:44 JST のまま＝9月分メディア（reels_output/sep/ の mp4 30本）は GitHub Pages に未公開
+- 過去日になった id34〜36 は既定の `publish.py` では有効化されない（日付入り本文のため）。内容確認のうえ扱いを決める
+
+### （9/1 時点の記録）
+
+**🔴 9/1 の投稿（id34）がサイレント欠落。8月分完走の翌日から、予告した9月分が1件も出ていない。**
+
+- 🔴 9/1 21:05 JST の回は「全63件 / pending 0件」で素通り（ログ確認）。**id34 は draft のまま投稿されず**
+- CSV: IG は posted 17 / cancelled 16 / **draft 30（id34〜63 全部）**、TH は posted 17 / failed 15 / 未設定30
+- git 最終コミットは 8/21 18:44 JST のまま＝9月分メディア（reels_output/sep/ の mp4 30本）は GitHub Pages に未push
+- cron 自体は健全（毎時 正常終了）。壊れているのはデータ側。`publish.py` を回せば解消する
+
+### （8/28 04:06 JST 時点の記録）
+
+**🟢 id29（8/27）まで6日連続で IG・Threads とも成功。次の山は変わらず「9月分（id34〜63・全部draft・メディア未push）」の publish.py 実行。**
+
+- ✅ **id29（8/27）も IG・Threads とも投稿成功**（CSV: 両方 posted。IG posted 13 / TH posted 13）
+- 残り8月分 id30〜33（8/28〜31）は IG・TH とも pending＝自動で回る。**8月分の弾はあと4日分**
+- 🟡 9月分30件（id34〜63）は依然 **全部 draft・git 最終コミット 8/21 18:44 JST のまま**＝`publish.py` は未実行。回さないと9月は1件も出ない
+- cron は健全。毎時 正常終了（直近 JST 8/28 04:05）
+
+### （8/27 時点の記録）
+
+**🟢 id28（8/26）まで5日連続で IG・Threads とも成功。**
+
+- ✅ **id27（8/25）・id28（8/26）とも IG・Threads で投稿成功**（CSV: 両方 posted。IG posted 12 / TH posted 12）
+
+### （8/25 時点の記録）
+
+**🟢 3日連続成功で完全復旧を確認。次の山は「9月分（id34〜63・全部draft・メディア未push）」の publish.py 実行。**
+
+- ✅ **id24（8/22）・id25（8/23）・id26（8/24）が IG・Threads とも投稿成功**（CSV で posted 確認。IG posted 10 / TH posted 10）。暦系リールも通っており、404問題は完全クローズ
+- ✅ 残り8月分 id27〜33 は IG・TH とも pending＝自動で回る
+- 🟡 **9月分30件（id34〜63）が CSV に追加済みだが全部 draft**。`build_september.py` と `reels_output/sep/`（mp4 30本）は作成済みだが、**git の最終コミットは 8/21 18:44＝9月のメディアは GitHub Pages に未push**。8月中に `python3 publish.py` を回さないと9月は1件も出ない（8月の404問題と同型）
+- cron は健全。毎時 正常終了（直近 JST 8/25 04:05）
+
+### （8/22 時点の記録）
+
+**🟢 復旧した。8/21 にメディアをコミット＆push → draft 0件 → id23（選択占い）が IG・Threads とも投稿成功。id24〜33 は全部 pending。**
+
+- ✅ 8/21 14:27・18:44 JST に「投稿と画像を更新」コミット（git log 確認）。`build_august.py`・`generate_choice_reel.py`・`LINE_色診断コンテンツ.md` も更新され、リール（21・24・27_choice.mp4 ほか）と post_images が再生成された
+- ✅ **8/21 21:05 の id23 は IG（投稿ID 18125350570688564）・Threads（18278001940295091）とも成功**。Threads のコンテナも IN_PROGRESS → FINISHED と正常処理
+- ✅ CSV の内訳は IG: **pending 10 / posted 7 / cancelled 16（draft 0）**、Threads: **pending 10 / posted 7 / failed 15 / cancelled 1**。**残り id24〜33 は両プラットフォームとも pending＝自動で回る**
+- 確認ポイント: 今夜 8/22 21:05 の id24 が暦系でも通るか（通れば「暦系リールが404で落ちる」問題は完全クローズ）
+- cron は健全。毎時 正常終了（直近 JST 8/22 04:05）
+
+### （8/21 時点の記録）
 
 **🔴 publish.py は昨日の期限までに実行されず。8/20 の id22 も Threads failed（16件目）・IG draft で投稿ゼロ。**
 
@@ -364,6 +469,10 @@ python3 publish.py
 
 ## 最近の進捗
 
+- 2026-08-27 **id29 も IG・Threads とも投稿成功＝6日連続**。9月分（id34〜63）は draft・メディア未push のまま変化なし。8月分の pending は id30〜33 の4件
+- 2026-08-25〜26 **id27・id28 も IG・Threads とも投稿成功＝5日連続**。9月分（id34〜63）は draft・メディア未push のまま変化なし
+- 2026-08-22〜24 **id24・25・26 が3日連続で IG・Threads とも投稿成功**（暦系含む）。8月分の自動運転は完全復旧。並行して 9月分30件（id34〜63）と `build_september.py`・`reels_output/sep/`（mp4 30本）を作成——ただし draft のままでメディアも未push
+- 2026-08-21 **投稿システム復旧**。メディアをコミット＆push（14:27・18:44 JST）して draft を解消し、21:05 の id23（選択占い）が IG・Threads とも投稿成功。id24〜33 は全部 pending で自動運転に戻った
 - 2026-08-20 21:05 **id22（寅の日）も Threads failed（計16件）・IG draft で投稿ゼロ**。原因確定（mp4 が GitHub Pages に無い＝404）済みなのに `publish.py` が期限内に実行されなかった
 - 2026-08-20 17:40 **原因確定**: draft 滞留もメディア処理エラーも根本原因は同一＝publish.py 未実行で情報系リール24本が GitHub Pages に404。期限切れ分は整理（IG 計15件 cancelled）
 - 2026-08-18 21:05 **id20（一粒万倍日・甲子）は Threads が「メディア処理エラー」で failed、IG は draft のため両方とも投稿ゼロ**。Threads の failed は計14件に
